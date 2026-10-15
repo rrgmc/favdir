@@ -71,16 +71,35 @@ void FolderDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option
     opt.text.clear();
 
     const QWidget *widget = option.widget;
-    QStyle *style = widget ? widget->style() : QApplication::style();
-    style->drawPrimitive(QStyle::PE_PanelItemViewItem, &opt, painter, widget);
 
+    // The row paints its own selection. Styles disagree on what "selected" looks like (the
+    // Windows 11 style uses a light grey that the highlighted-text colour is unreadable on), so
+    // use a light tint of the accent colour and keep the normal text colour.
     const bool selected = opt.state & QStyle::State_Selected;
+    const bool hoveredRow = opt.state & QStyle::State_MouseOver;
     const QPalette::ColorGroup group = opt.state & QStyle::State_Active ? QPalette::Active
                                                                           : QPalette::Inactive;
-    const QColor textColor = opt.palette.color(group, selected ? QPalette::HighlightedText
-                                                               : QPalette::Text);
-    const QColor background = opt.palette.color(group, selected ? QPalette::Highlight
-                                                                : QPalette::Base);
+    const QColor base = opt.palette.color(group, QPalette::Base);
+    const QColor accent = opt.palette.color(QPalette::Active, QPalette::Highlight);
+    const QColor textColor = opt.palette.color(group, QPalette::Text);
+    QColor background = base;
+    if (selected)
+        background = blend(base, accent, group == QPalette::Active ? 0.22 : 0.12);
+    else if (hoveredRow)
+        background = blend(base, accent, 0.07);
+    {
+        painter->save();
+        painter->setRenderHint(QPainter::Antialiasing);
+        const QRectF r = QRectF(opt.rect).adjusted(1.5, 1.5, -1.5, -1.5);
+        QPainterPath path;
+        path.addRoundedRect(r, 4, 4);
+        painter->fillPath(path, background);
+        if (selected) {
+            painter->setPen(QPen(accent, 1.5));
+            painter->drawPath(path);
+        }
+        painter->restore();
+    }
 
     const QFontMetrics fm(opt.font);
     const QStringList actions = index.data(SectionModel::ActionNamesRole).toStringList();
