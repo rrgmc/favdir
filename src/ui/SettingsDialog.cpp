@@ -1,5 +1,7 @@
 #include "SettingsDialog.h"
 
+#include "LoginItem.h"
+
 #include <QCheckBox>
 #include <QDialogButtonBox>
 #include <QFormLayout>
@@ -15,6 +17,7 @@ SettingsDialog::SettingsDialog(const Settings &settings, const QString &hotkeyEr
     , m_original(settings)
     , m_hotkey(new QKeySequenceEdit(this))
     , m_closeToTray(new QCheckBox(tr("&Closing the window keeps favdir running in the tray"), this))
+    , m_startAtSignIn(new QCheckBox(tr("&Start favdir when I sign in"), this))
 {
     setWindowTitle(tr("Settings"));
 
@@ -46,6 +49,14 @@ SettingsDialog::SettingsDialog(const Settings &settings, const QString &hotkeyEr
     m_closeToTray->setEnabled(trayAvailable);
     form->addRow(QString(), m_closeToTray);
 
+    // The OS holds this state, so read it each time rather than storing it in Settings.
+    if (LoginItem::isSupported()) {
+        m_startAtSignIn->setChecked(LoginItem::isEnabled());
+        form->addRow(QString(), m_startAtSignIn);
+    } else {
+        m_startAtSignIn->hide();
+    }
+
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -62,4 +73,9 @@ Settings SettingsDialog::settings() const
     // Without a tray the checkbox is disabled; keep the stored choice for when one appears.
     s.closeToTray = m_closeToTray->isEnabled() ? m_closeToTray->isChecked() : m_original.closeToTray;
     return s;
+}
+
+bool SettingsDialog::startAtSignIn() const
+{
+    return m_startAtSignIn->isChecked();
 }
