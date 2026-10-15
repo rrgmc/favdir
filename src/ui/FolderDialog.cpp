@@ -1,6 +1,7 @@
 #include "FolderDialog.h"
 
 #include "ActionTableEditor.h"
+#include "ItemCheckStyle.h"
 #include "model/FolderStore.h"
 
 #include <QDialogButtonBox>
@@ -62,6 +63,7 @@ FolderDialog::FolderDialog(const FolderStore *store, const Folder &folder, QWidg
         item->setCheckState(FolderStore::isShown(a, folder) ? Qt::Checked : Qt::Unchecked);
     }
     m_globalActions->setMaximumHeight(140);
+    ItemCheckStyle::apply(m_globalActions);
     auto *globalBox = new QGroupBox(tr("&Library actions shown on this folder"), this);
     auto *globalLayout = new QVBoxLayout(globalBox);
     globalLayout->addWidget(m_globalActions);

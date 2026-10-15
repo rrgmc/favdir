@@ -1,5 +1,7 @@
 #include "ActionTableEditor.h"
 
+#include "ItemCheckStyle.h"
+
 #include <QDropEvent>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -109,6 +111,7 @@ ActionTableEditor::ActionTableEditor(Mode mode, QWidget *parent)
                                                       QHeaderView::ResizeToContents);
     m_table->setColumnWidth(NameColumn, 140);
     m_table->verticalHeader()->setVisible(false);
+    ItemCheckStyle::apply(m_table);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
     m_table->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed
