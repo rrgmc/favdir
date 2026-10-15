@@ -61,7 +61,9 @@ MainWindow::MainWindow(FolderStore *store, QWidget *parent)
     setWindowIcon(Icons::appIcon());
     resize(720, 760);
 
-    m_filter->setPlaceholderText(tr("Filter by name or path (Ctrl+F)"));
+    m_filter->setPlaceholderText(
+        tr("Filter by name or path (%1)")
+            .arg(QKeySequence(Qt::CTRL | Qt::Key_F).toString(QKeySequence::NativeText)));
     m_filter->setClearButtonEnabled(true);
     m_filter->installEventFilter(this);
 
@@ -69,7 +71,12 @@ MainWindow::MainWindow(FolderStore *store, QWidget *parent)
     m_boards[1] = new PriorityBoard(store, false, this);
     m_tabs->addTab(m_boards[0], QString());
     m_tabs->addTab(m_boards[1], QString());
+#ifdef Q_OS_MACOS
+    // The framed pane gives macOS's centred tabs over a panel, as in its own settings windows.
+    m_tabs->setDocumentMode(false);
+#else
     m_tabs->setDocumentMode(true);
+#endif
 
     for (PriorityBoard *b : m_boards) {
         connect(b, &PriorityBoard::runAction, this, &MainWindow::runAction);
@@ -99,9 +106,14 @@ MainWindow::MainWindow(FolderStore *store, QWidget *parent)
 
     auto *central = new QWidget(this);
     auto *layout = new QVBoxLayout(central);
+#ifdef Q_OS_MACOS
+    // The filter sits in the toolbar, as search fields do in Mac windows.
+    layout->setContentsMargins(12, 10, 12, 12);
+#else
     layout->setContentsMargins(8, 8, 8, 0);
-    layout->setSpacing(6);
     layout->addWidget(m_filter);
+#endif
+    layout->setSpacing(6);
     layout->addWidget(m_tabs, 1);
     setCentralWidget(central);
 
@@ -216,6 +228,22 @@ void MainWindow::createActions()
         connect(action, &QAction::changed, this, updateTip);
         updateTip();
     }
+
+#ifdef Q_OS_MACOS
+    setUnifiedTitleAndToolBarOnMac(true);
+    toolbar->setIconSize(QSize(18, 18));
+    auto *spacer = new QWidget(toolbar);
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    toolbar->addWidget(spacer);
+    // Narrow enough to fit a narrow window: the toolbar hides what does not fit.
+    m_filter->setMinimumWidth(120);
+    m_filter->setMaximumWidth(280);
+    toolbar->addWidget(m_filter);
+    // Keeps the field's focus ring off the window edge.
+    auto *edge = new QWidget(toolbar);
+    edge->setFixedWidth(6);
+    toolbar->addWidget(edge);
+#endif
 
     // Not in a menu: tab switching.
     auto *nextTab = new QAction(this);

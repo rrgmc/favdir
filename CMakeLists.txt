@@ -88,6 +88,9 @@ target_link_libraries(make_icons PRIVATE favdir_ui)
 
 qt_add_executable(make_screenshot EXCLUDE_FROM_ALL tools/make_screenshot.cpp)
 target_link_libraries(make_screenshot PRIVATE favdir_ui)
+if(APPLE)
+    target_link_libraries(make_screenshot PRIVATE "-framework CoreGraphics")
+endif()
 
 # Copy the Qt runtime next to the executable so it runs from the build tree.
 if(WIN32)

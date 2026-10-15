@@ -87,7 +87,8 @@ void FolderDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option
         background = blend(base, accent, group == QPalette::Active ? 0.22 : 0.12);
     else if (hoveredRow)
         background = blend(base, accent, 0.07);
-    {
+    // Plain rows show the view's own background, which is not Base on macOS.
+    if (selected || hoveredRow) {
         painter->save();
         painter->setRenderHint(QPainter::Antialiasing);
         const QRectF r = QRectF(opt.rect).adjusted(1.5, 1.5, -1.5, -1.5);

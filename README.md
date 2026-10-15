@@ -3,7 +3,9 @@
 A small desktop app that keeps a list of the folders you use most, and opens each one in the
 tool you need with one click or one key. It runs on Windows and macOS.
 
-![The favdir window with folders in the High, Medium and Low sections](docs/screenshot.png)
+![The favdir window on Windows, with folders in the High, Medium and Low sections](docs/screenshot.png)
+
+![The favdir window on macOS](docs/screenshot-macos.png)
 
 - Folders sit in **High**, **Medium** and **Low** sections, on an **Active** and an
   **Inactive** tab. Move them between sections and tabs by dragging or with the keyboard.
@@ -136,10 +138,12 @@ generated from the drawing in `src/ui/Icons.cpp`; after changing it, rebuild the
 `cmake --build --preset windows --target make_icons`, then run
 `build/windows/bin/Release/make_icons resources`.
 
-The screenshot above is `docs/screenshot.png`, drawn with made-up folders by the
-`make_screenshot` target. After changing the look of the window, rebuild it with
-`cmake --build --preset windows --target make_screenshot`, then run
-`build/windows/bin/Release/make_screenshot docs/screenshot.png`.
+The screenshots above are `docs/screenshot.png` (Windows) and `docs/screenshot-macos.png`
+(macOS), drawn with made-up folders by the `make_screenshot` target. After changing the look of
+the window, rebuild it with `cmake --build --preset windows --target make_screenshot`, then run
+`build/windows/bin/Release/make_screenshot docs/screenshot.png`. On macOS, use the `macos`
+preset and `docs/screenshot-macos.png`; the tool captures the window with `screencapture`, so
+the terminal needs the Screen Recording permission.
 
 ### Tasks
 
@@ -152,7 +156,7 @@ task run          # start favdir with a scratch data file in the build folder
 task install      # copy the app and the Qt libraries into dist/
 task package      # make the Windows setup or the macOS disk image
 task icons        # regenerate the icon files
-task screenshot   # regenerate docs/screenshot.png
+task screenshot   # regenerate the screenshot of the current platform
 ```
 
 ### Windows setup

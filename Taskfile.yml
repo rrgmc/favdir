@@ -87,12 +87,12 @@ tasks:
       - '"{{.BIN_DIR}}/make_icons{{.EXE}}" resources'
 
   screenshot:
-    desc: Regenerate docs/screenshot.png
+    desc: Regenerate docs/screenshot.png (Windows) or docs/screenshot-macos.png (macOS)
     # Builds favdir too: its post-build step puts the Qt runtime in the same folder.
     deps: [build]
     cmds:
       - cmake --build --preset {{.PRESET}} --target make_screenshot
-      - '"{{.BIN_DIR}}/make_screenshot{{.EXE}}" docs/screenshot.png'
+      - '"{{.BIN_DIR}}/make_screenshot{{.EXE}}" docs/{{if eq OS "windows"}}screenshot.png{{else}}screenshot-macos.png{{end}}'
 
   clean:
     desc: Delete the build folder of the platform preset and dist/
