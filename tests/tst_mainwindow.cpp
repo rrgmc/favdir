@@ -1,10 +1,14 @@
 #include "model/FolderStore.h"
 #include "ui/ActionTableEditor.h"
 #include "ui/MainWindow.h"
+#include "ui/PriorityBoard.h"
 #include "ui/SectionView.h"
 
 #include <QApplication>
+#include <QDragEnterEvent>
 #include <QLineEdit>
+#include <QMimeData>
+#include <QScrollBar>
 #include <QStatusBar>
 #include <QTableWidget>
 #include <QTabWidget>
@@ -68,6 +72,45 @@ private slots:
         m_window.reset();
         m_store.reset();
         m_ids.clear();
+    }
+
+    void dragNearEdgeScrollsBoard()
+    {
+        for (int i = 0; i < 30; ++i) {
+            Folder f;
+            f.name = QStringLiteral("extra%1").arg(i);
+            f.path = m_dir.path();
+            f.priority = Priority::Low;
+            m_store->addFolder(f);
+        }
+        m_window->resize(400, 300);
+        auto *board = qobject_cast<PriorityBoard *>(
+            m_window->findChild<QTabWidget *>()->currentWidget());
+        QVERIFY(board);
+        QScrollBar *bar = board->verticalScrollBar();
+        QTRY_VERIFY(bar->maximum() > 0);
+        bar->setValue(0);
+
+        // A drag over a header, held near the bottom edge, scrolls down until it leaves.
+        QMimeData mime;
+        mime.setText(QStringLiteral("x"));
+        QWidget *content = board->widget();
+        const QPoint bottom = board->viewport()->mapToGlobal(
+            QPoint(board->viewport()->width() / 2, board->viewport()->height() - 4));
+        QCursor::setPos(bottom);
+        QDragEnterEvent enter(content->mapFromGlobal(bottom), Qt::MoveAction, &mime,
+                              Qt::LeftButton, Qt::NoModifier);
+        QApplication::sendEvent(content, &enter);
+        QTRY_VERIFY(bar->value() > 0);
+        QDragLeaveEvent leave;
+        QApplication::sendEvent(content, &leave);
+        const int stopped = bar->value();
+        QTest::qWait(100);
+        QCOMPARE(bar->value(), stopped);
+
+        // The wheel scrolls the board while the cursor is over it.
+        board->scrollByWheel(-120);
+        QVERIFY(bar->value() > stopped);
     }
 
     void arrowKeysCrossSections()

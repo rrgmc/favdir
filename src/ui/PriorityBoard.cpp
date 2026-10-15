@@ -4,21 +4,64 @@
 #include "model/FolderStore.h"
 #include "model/SectionModel.h"
 
+#include <QCursor>
+#include <QDragMoveEvent>
 #include <QLabel>
+#include <QPointer>
 #include <QScrollBar>
 #include <QTimer>
+#include <QApplication>
 #include <QVBoxLayout>
+
+#ifdef Q_OS_WIN
+#include <qt_windows.h>
+#endif
+
+namespace {
+constexpr int DragScrollMargin = 48;  // pixels from the edge where a drag starts scrolling
+constexpr int DragScrollInterval = 20;
+
+#ifdef Q_OS_WIN
+// Windows runs a drag in its own message loop, which never turns wheel messages into Qt wheel
+// events. A low-level mouse hook still sees them; it is installed only while a drag is over a
+// board.
+QPointer<PriorityBoard> wheelBoard;
+HHOOK wheelHook = nullptr;
+
+LRESULT CALLBACK dragWheelProc(int code, WPARAM wParam, LPARAM lParam)
+{
+    if (code == HC_ACTION && wParam == WM_MOUSEWHEEL && wheelBoard) {
+        const auto *info = reinterpret_cast<const MSLLHOOKSTRUCT *>(lParam);
+        const int delta = static_cast<short>(HIWORD(info->mouseData));
+        QMetaObject::invokeMethod(
+            wheelBoard.data(), [board = wheelBoard, delta] {
+                if (board)
+                    board->scrollByWheel(delta);
+            },
+            Qt::QueuedConnection);
+    }
+    return CallNextHookEx(nullptr, code, wParam, lParam);
+}
+#endif
+}
 
 PriorityBoard::PriorityBoard(FolderStore *store, bool active, QWidget *parent)
     : QScrollArea(parent)
     , m_store(store)
     , m_active(active)
+    , m_dragScrollTimer(new QTimer(this))
 {
     setWidgetResizable(true);
     setFrameShape(QFrame::NoFrame);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
+    m_dragScrollTimer->setInterval(DragScrollInterval);
+    connect(m_dragScrollTimer, &QTimer::timeout, this, &PriorityBoard::dragAutoScroll);
+
     auto *content = new QWidget;
+    // Headers and gaps take drags too, so the edge scrolling works over them.
+    content->setAcceptDrops(true);
+    content->installEventFilter(this);
     auto *layout = new QVBoxLayout(content);
     layout->setContentsMargins(8, 4, 8, 8);
     layout->setSpacing(4);
@@ -33,6 +76,7 @@ PriorityBoard::PriorityBoard(FolderStore *store, bool active, QWidget *parent)
 
         auto *view = new SectionView(model, content);
         header->setBuddy(view);
+        view->viewport()->installEventFilter(this);
 
         layout->addWidget(header);
         layout->addWidget(view);
@@ -60,6 +104,98 @@ PriorityBoard::PriorityBoard(FolderStore *store, bool active, QWidget *parent)
     layout->addStretch(1);
     setWidget(content);
     updateHeaders();
+}
+
+bool PriorityBoard::eventFilter(QObject *watched, QEvent *event)
+{
+    const bool isContent = watched == widget();
+    switch (event->type()) {
+    case QEvent::DragEnter:
+        startDragScroll();
+        if (isContent) {
+            static_cast<QDragEnterEvent *>(event)->acceptProposedAction();
+            return true;
+        }
+        break;
+    case QEvent::DragMove:
+        startDragScroll();
+        if (isContent) {
+            // Nothing to drop on between the sections.
+            event->ignore();
+            return true;
+        }
+        break;
+    case QEvent::DragLeave:
+        // Also sent when a cancelled drag ends. Moving on to another section or a header
+        // starts the scrolling again with its next enter or move.
+        stopDragScroll();
+        break;
+    case QEvent::Drop:
+        stopDragScroll();
+        if (isContent) {
+            event->ignore();
+            return true;
+        }
+        break;
+    default:
+        break;
+    }
+    return QScrollArea::eventFilter(watched, event);
+}
+
+void PriorityBoard::startDragScroll()
+{
+    if (m_dragScrollTimer->isActive())
+        return;
+    m_dragScrollTimer->start();
+#ifdef Q_OS_WIN
+    wheelBoard = this;
+    if (!wheelHook)
+        wheelHook = SetWindowsHookExW(WH_MOUSE_LL, dragWheelProc, GetModuleHandleW(nullptr), 0);
+#endif
+}
+
+void PriorityBoard::stopDragScroll()
+{
+    m_dragScrollTimer->stop();
+#ifdef Q_OS_WIN
+    if (wheelBoard == this) {
+        wheelBoard = nullptr;
+        if (wheelHook)
+            UnhookWindowsHookEx(wheelHook);
+        wheelHook = nullptr;
+    }
+#endif
+}
+
+void PriorityBoard::scrollByWheel(int delta)
+{
+    // Only while the cursor is over this board, as a normal wheel event would be.
+    if (!viewport()->rect().contains(viewport()->mapFromGlobal(QCursor::pos())))
+        return;
+    QScrollBar *bar = verticalScrollBar();
+    bar->setValue(bar->value() - delta * QApplication::wheelScrollLines() * bar->singleStep() / 120);
+}
+
+void PriorityBoard::dragAutoScroll()
+{
+    const QPoint pos = viewport()->mapFromGlobal(QCursor::pos());
+    const int height = viewport()->height();
+    int delta = 0;
+    if (pos.y() < DragScrollMargin)
+        delta = -(DragScrollMargin - qMax(pos.y(), 0));
+    else if (pos.y() > height - DragScrollMargin)
+        delta = qMin(pos.y(), height) - (height - DragScrollMargin);
+    if (delta == 0)
+        return;
+    // Faster the closer the cursor is to the edge: up to half the margin per tick.
+    QScrollBar *bar = verticalScrollBar();
+    bar->setValue(bar->value() + delta / 2 + (delta > 0 ? 1 : -1));
+}
+
+PriorityBoard::~PriorityBoard()
+{
+    stopDragScroll();
 }
 
 void PriorityBoard::setFilter(const QString &filter)

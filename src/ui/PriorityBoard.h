@@ -8,6 +8,7 @@
 
 class FolderStore;
 class QLabel;
+class QTimer;
 class SectionModel;
 class SectionView;
 
@@ -19,6 +20,7 @@ class PriorityBoard : public QScrollArea
 
 public:
     PriorityBoard(FolderStore *store, bool active, QWidget *parent = nullptr);
+    ~PriorityBoard() override;
 
     bool isActiveBoard() const { return m_active; }
     void setFilter(const QString &filter);
@@ -34,6 +36,11 @@ public:
     Priority currentPriority() const;
     int folderCount() const;
     int visibleCount() const;
+    // Scrolls as a mouse wheel turned by `delta` (120 per notch) would.
+    void scrollByWheel(int delta);
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 signals:
     void runAction(const QUuid &folderId, int actionIndex);
@@ -48,6 +55,9 @@ private:
     void updateHeaders();
     void focusNeighbour(int viewIndex, int step);
     void ensureCurrentVisible();
+    void startDragScroll();
+    void stopDragScroll();
+    void dragAutoScroll();
 
     FolderStore *m_store;
     bool m_active;
@@ -56,4 +66,7 @@ private:
     QList<QLabel *> m_headers;
     QUuid m_currentId;
     bool m_restorePending = false;
+    // Scrolls the board while a drag hovers near its top or bottom edge; the sections grow to
+    // fit their rows, so their own drag auto-scroll has nothing to scroll.
+    QTimer *m_dragScrollTimer;
 };
