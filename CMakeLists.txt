@@ -42,8 +42,17 @@ qt_add_library(favdir_ui STATIC
     src/ui/PriorityBoard.h src/ui/PriorityBoard.cpp
     src/ui/SectionView.h src/ui/SectionView.cpp
     src/ui/SettingsDialog.h src/ui/SettingsDialog.cpp
+    src/ui/TrayIcon.h
 )
 target_link_libraries(favdir_ui PUBLIC favdir_core Qt6::Widgets)
+if(APPLE)
+    enable_language(OBJCXX)
+    target_sources(favdir_ui PRIVATE src/ui/TrayIcon_mac.mm)
+    set_source_files_properties(src/ui/TrayIcon_mac.mm PROPERTIES COMPILE_OPTIONS -fobjc-arc)
+    target_link_libraries(favdir_ui PUBLIC "-framework AppKit")
+else()
+    target_sources(favdir_ui PRIVATE src/ui/TrayIcon.cpp)
+endif()
 
 qt_add_executable(favdir WIN32 MACOSX_BUNDLE
     src/main.cpp

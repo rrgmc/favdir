@@ -5,6 +5,7 @@
 #include "Icons.h"
 #include "PriorityBoard.h"
 #include "SettingsDialog.h"
+#include "TrayIcon.h"
 #include "actions/ActionRunner.h"
 #include "model/FolderStore.h"
 
@@ -20,7 +21,6 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QStatusBar>
-#include <QSystemTrayIcon>
 #include <QTabWidget>
 #include <QTimer>
 #include <QToolBar>
@@ -169,12 +169,12 @@ void MainWindow::createActions()
     QAction *aboutQt = help->addAction(tr("About &Qt"), qApp, &QApplication::aboutQt);
     aboutQt->setMenuRole(QAction::AboutQtRole);
 
-    add->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::FolderNew));
-    edit->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::DocumentProperties));
-    remove->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::ListRemove));
-    m_toggleAction->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::SyncSynchronizing));
-    library->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::FormatJustifyLeft));
-    settings->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::DocumentPageSetup));
+    add->setIcon(Icons::toolIcon(QIcon::ThemeIcon::FolderNew));
+    edit->setIcon(Icons::toolIcon(QIcon::ThemeIcon::DocumentProperties));
+    remove->setIcon(Icons::toolIcon(QIcon::ThemeIcon::ListRemove));
+    m_toggleAction->setIcon(Icons::toolIcon(QIcon::ThemeIcon::SyncSynchronizing));
+    library->setIcon(Icons::toolIcon(QIcon::ThemeIcon::FormatJustifyLeft));
+    settings->setIcon(Icons::toolIcon(QIcon::ThemeIcon::DocumentPageSetup));
 
     // The toolbar repeats the most used commands. Its labels are shorter than the menu items.
     QToolBar *toolbar = addToolBar(tr("Toolbar"));
@@ -226,14 +226,12 @@ void MainWindow::createActions()
 
 void MainWindow::createTray()
 {
-    if (!QSystemTrayIcon::isSystemTrayAvailable()) {
+    if (!TrayIcon::isAvailable()) {
         // At sign-in favdir can start before the taskbar; try again for a minute.
         if (++m_trayAttempts < TrayAttempts)
             QTimer::singleShot(TrayRetryMs, this, &MainWindow::createTray);
         return;
     }
-    m_tray = new QSystemTrayIcon(Icons::trayIcon(), this);
-    m_tray->setToolTip(QStringLiteral("favdir"));
     auto *menu = new QMenu(this);
     menu->addAction(tr("Show favdir"), this, &MainWindow::showAndFocus);
     menu->addAction(tr("Settings…"), this, [this] {
@@ -242,18 +240,8 @@ void MainWindow::createTray()
     });
     menu->addSeparator();
     menu->addAction(tr("Quit"), qApp, &QApplication::quit);
-    m_tray->setContextMenu(menu);
-    connect(m_tray, &QSystemTrayIcon::activated, this,
-            [this](QSystemTrayIcon::ActivationReason reason) {
-#ifndef Q_OS_MACOS
-                // On macOS any click opens the menu.
-                if (reason == QSystemTrayIcon::Trigger)
-                    toggleVisible();
-#else
-                Q_UNUSED(reason);
-#endif
-            });
-    m_tray->show();
+    m_tray = new TrayIcon(Icons::trayIcon(), QStringLiteral("favdir"), menu, this);
+    connect(m_tray, &TrayIcon::triggered, this, &MainWindow::toggleVisible);
 }
 
 PriorityBoard *MainWindow::currentBoard() const
@@ -361,7 +349,7 @@ void MainWindow::showMessage(const QString &text, bool error)
 {
     statusBar()->showMessage(text, MessageTimeoutMs);
     if (error && m_tray && !isVisible())
-        m_tray->showMessage(QStringLiteral("favdir"), text, QSystemTrayIcon::Warning);
+        m_tray->showWarning(QStringLiteral("favdir"), text);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
