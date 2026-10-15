@@ -1,0 +1,100 @@
+# Common tasks for favdir. Install go-task from https://taskfile.dev and run `task --list`.
+# Each task uses the preset for the current platform: `windows` or `macos`.
+
+version: '3'
+
+vars:
+  PRESET: '{{if eq OS "windows"}}windows{{else}}macos{{end}}'
+  CONFIG: Release
+  BUILD_DIR: build/{{.PRESET}}
+  BIN_DIR: '{{.BUILD_DIR}}/bin/{{.CONFIG}}'
+  EXE: '{{if eq OS "windows"}}.exe{{end}}'
+  APP: '{{if eq OS "windows"}}{{.BIN_DIR}}/favdir.exe{{else}}{{.BIN_DIR}}/favdir.app/Contents/MacOS/favdir{{end}}'
+
+tasks:
+  default:
+    cmds:
+      - task --list
+    silent: true
+
+  setup:
+    desc: Download the prebuilt Qt into .qt/ (needs uv)
+    cmds:
+      - cmd: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup.ps1
+        platforms: [windows]
+      - cmd: sh scripts/setup.sh
+        platforms: [darwin]
+
+  configure:
+    desc: Configure the build folder with the platform preset
+    deps: [setup]
+    cmds:
+      - cmake --preset {{.PRESET}}
+    status:
+      - test -f {{.BUILD_DIR}}/CMakeCache.txt
+
+  build:
+    desc: Build the Release configuration
+    deps: [configure]
+    cmds:
+      - cmake --build --preset {{.PRESET}}
+
+  build-debug:
+    desc: Build the Debug configuration
+    deps: [configure]
+    cmds:
+      - cmake --build --preset {{.PRESET}}-debug
+
+  test:
+    desc: Build and run the tests through CTest
+    deps: [build]
+    cmds:
+      - ctest --preset {{.PRESET}}
+
+  run:
+    desc: Build and start favdir with a scratch data file in the build folder
+    deps: [build]
+    env:
+      FAVDIR_DATA_FILE: '{{.ROOT_DIR}}/{{.BUILD_DIR}}/scratch-data.json'
+    cmds:
+      - '"{{.APP}}"'
+
+  install:
+    desc: Copy the app and its Qt runtime into dist/
+    deps: [build]
+    cmds:
+      - cmake --install {{.BUILD_DIR}} --config {{.CONFIG}} --prefix "{{.ROOT_DIR}}/dist"
+
+  package:
+    desc: Make the Windows setup or the macOS disk image with CPack
+    deps: [build]
+    dir: '{{.BUILD_DIR}}'
+    cmds:
+      - cpack -C {{.CONFIG}}
+
+  release-macos:
+    desc: 'Make the notarised macOS disk image (task release-macos -- <version> [--upload])'
+    platforms: [darwin]
+    cmds:
+      - sh scripts/release-macos.sh {{.CLI_ARGS}}
+
+  icons:
+    desc: Regenerate resources/favdir.ico and favdir.icns from src/ui/Icons.cpp
+    # Builds favdir too: its post-build step puts the Qt runtime in the same folder.
+    deps: [build]
+    cmds:
+      - cmake --build --preset {{.PRESET}} --target make_icons
+      - '"{{.BIN_DIR}}/make_icons{{.EXE}}" resources'
+
+  screenshot:
+    desc: Regenerate docs/screenshot.png
+    # Builds favdir too: its post-build step puts the Qt runtime in the same folder.
+    deps: [build]
+    cmds:
+      - cmake --build --preset {{.PRESET}} --target make_screenshot
+      - '"{{.BIN_DIR}}/make_screenshot{{.EXE}}" docs/screenshot.png'
+
+  clean:
+    desc: Delete the build folder of the platform preset and dist/
+    cmds:
+      - cmake -E rm -rf {{.BUILD_DIR}} dist

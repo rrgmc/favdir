@@ -14,6 +14,8 @@ actions on them. `README.md` describes the features and the build for users.
     release workflow use it; locally it needs a developer prompt (`vcvars64.bat`).
   - `macos`: Ninja Multi-Config, universal binary.
 - `cmake --preset windows && cmake --build --preset windows && ctest --preset windows`.
+- `Taskfile.yml` (go-task) wraps setup, build, test, run, install, package, icons and
+  screenshot for the current platform's preset. Keep it in step with the commands here.
 - Run tests through CTest, not the test executables directly. CTest sets `QT_QPA_PLATFORM=offscreen`,
   `QT_PLUGIN_PATH` and `PATH`. Without them the GUI test shows a blocking "no Qt platform plugin"
   dialog on the desktop.
