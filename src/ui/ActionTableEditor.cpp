@@ -1,11 +1,15 @@
 #include "ActionTableEditor.h"
 
 #include "ItemCheckStyle.h"
+#include "actions/ActionTemplates.h"
 
 #include <QDropEvent>
+#include <QFileDialog>
 #include <QHBoxLayout>
 #include <QHeaderView>
+#include <QInputDialog>
 #include <QKeyEvent>
+#include <QMenu>
 #include <QPushButton>
 #include <QTableWidget>
 #include <QVBoxLayout>
@@ -124,12 +128,53 @@ ActionTableEditor::ActionTableEditor(Mode mode, QWidget *parent)
     up->setToolTip(tr("Or drag the row, or press Ctrl+Shift+Up"));
     down->setToolTip(tr("Or drag the row, or press Ctrl+Shift+Down"));
 
-    connect(add, &QPushButton::clicked, this, [this] {
-        appendRow(Action{QUuid::createUuid(), QString(), QString(), false, true});
-        const int row = m_table->rowCount() - 1;
-        m_table->setCurrentCell(row, NameColumn);
-        m_table->editItem(m_table->item(row, NameColumn));
+    auto *addMenu = new QMenu(add);
+    addMenu->addAction(tr("&Empty action"), this, [this] {
+        appendAndEdit(Action{QUuid::createUuid(), QString(), QString(), false, true});
     });
+    addMenu->addSeparator();
+    addMenu->addAction(tr("Open with &application..."), this, [this] {
+#if defined(Q_OS_WIN)
+        const QString start = qEnvironmentVariable("ProgramFiles");
+        const QString filter = tr("Programs (*.exe *.cmd *.bat)");
+#else
+        const QString start = QStringLiteral("/Applications");
+        const QString filter = tr("Applications (*.app)");
+#endif
+        const QString path =
+            QFileDialog::getOpenFileName(this, tr("Open with application"), start, filter);
+        if (!path.isEmpty())
+            appendAndEdit(ActionTemplates::openWithApplication(path));
+    });
+    addMenu->addAction(tr("&Terminal in folder"), this,
+                       [this] { appendAndEdit(ActionTemplates::terminal()); });
+    addMenu->addAction(tr("Terminal &running a command..."), this, [this] {
+        const QString command =
+            askCommand(tr("Terminal running a command"),
+                       tr("Command to run in a new terminal, for example <code>claude</code>:"));
+        if (!command.isEmpty())
+            appendAndEdit(ActionTemplates::terminalRunning(command));
+    });
+    if (ActionTemplates::hasITerm()) {
+        addMenu->addAction(tr("&iTerm in folder"), this,
+                           [this] { appendAndEdit(ActionTemplates::iTerm()); });
+        addMenu->addAction(tr("iTerm r&unning a command..."), this, [this] {
+            const QString command = askCommand(
+                tr("iTerm running a command"),
+                tr("Command to run in a new iTerm window, for example <code>claude</code>:"));
+            if (!command.isEmpty())
+                appendAndEdit(ActionTemplates::iTermRunning(command));
+        });
+    }
+    addMenu->addAction(tr("Run a command in the &background..."), this, [this] {
+        const QString command = askCommand(
+            tr("Run a command in the background"),
+            tr("Command to run through the shell, without a window, for example "
+               "<code>./build.sh</code>. If it fails, the status bar shows its error output."));
+        if (!command.isEmpty())
+            appendAndEdit(ActionTemplates::background(command));
+    });
+    add->setMenu(addMenu);
     connect(remove, &QPushButton::clicked, this, [this] {
         const int row = m_table->currentRow();
         if (row >= 0)
@@ -157,7 +202,27 @@ QString ActionTableEditor::helpText()
               "Use the quotes the command needs, for example <code>code \"{path}\"</code>. "
               "The command <b>@open</b> opens the folder in the file manager. "
               "<b>Shell</b> runs the command through cmd (Windows) or sh (macOS), which "
-              "allows scripts, pipes and &amp;&amp;. Commands start in the folder.");
+              "allows scripts, pipes and &amp;&amp;. Commands start in the folder. "
+              "The <b>Add</b> menu has templates for applications and terminals.");
+}
+
+void ActionTableEditor::appendAndEdit(const Action &action)
+{
+    appendRow(action);
+    const int row = m_table->rowCount() - 1;
+    m_table->setCurrentCell(row, NameColumn);
+    m_table->editItem(m_table->item(row, NameColumn));
+}
+
+QString ActionTableEditor::askCommand(const QString &title, const QString &label)
+{
+    QInputDialog dialog(this);
+    dialog.setWindowTitle(title);
+    dialog.setLabelText(label);
+    dialog.resize(480, dialog.sizeHint().height());
+    if (dialog.exec() != QDialog::Accepted)
+        return {};
+    return dialog.textValue().trimmed();
 }
 
 void ActionTableEditor::setActions(const QList<Action> &actions)
