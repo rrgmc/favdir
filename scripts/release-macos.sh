@@ -11,7 +11,9 @@
 #   xcrun notarytool store-credentials favdir --apple-id <Apple ID> --team-id <team ID>
 #
 # FAVDIR_CODESIGN_IDENTITY overrides the certificate (default: "Developer ID Application") and
-# FAVDIR_NOTARY_PROFILE the credentials profile (default: favdir).
+# FAVDIR_NOTARY_PROFILE the credentials profile (default: favdir). The release workflow uses an
+# App Store Connect API key instead of a profile: FAVDIR_NOTARY_KEY (path to the .p8 file),
+# FAVDIR_NOTARY_KEY_ID and FAVDIR_NOTARY_ISSUER.
 
 set -eu
 
@@ -38,13 +40,23 @@ ROOT=$(cd "$(dirname "$0")/.." && pwd)
 BUILD="$ROOT/build/macos-release"
 DMG="$BUILD/favdir-$VERSION-macos.dmg"
 
+# notarytool with the API key when one is set, otherwise with the stored profile.
+notary() {
+    if [ -n "${FAVDIR_NOTARY_KEY:-}" ]; then
+        xcrun notarytool "$@" --key "$FAVDIR_NOTARY_KEY" \
+            --key-id "$FAVDIR_NOTARY_KEY_ID" --issuer "$FAVDIR_NOTARY_ISSUER"
+    else
+        xcrun notarytool "$@" --keychain-profile "$PROFILE"
+    fi
+}
+
 # Check the certificate and the credentials before the build, not after it.
 if ! security find-identity -v -p codesigning | grep -q "\"$IDENTITY"; then
     echo "No codesigning identity matching '$IDENTITY' in the keychain." >&2
     exit 1
 fi
-if ! xcrun notarytool history --keychain-profile "$PROFILE" >/dev/null 2>&1; then
-    echo "No working notarytool credentials in profile '$PROFILE'. Store them with:" >&2
+if ! notary history >/dev/null 2>&1; then
+    echo "The notarytool credentials do not work. For a profile, store them with:" >&2
     echo "  xcrun notarytool store-credentials $PROFILE --apple-id <Apple ID> --team-id <team ID>" >&2
     exit 1
 fi
@@ -62,12 +74,12 @@ rm -f "$DMG"
 codesign --sign "$IDENTITY" --timestamp "$DMG"
 
 # notarytool can exit with 0 for a rejected submission, so check the status it prints.
-RESULT=$(xcrun notarytool submit "$DMG" --keychain-profile "$PROFILE" --wait)
+RESULT=$(notary submit "$DMG" --wait)
 echo "$RESULT"
 if ! echo "$RESULT" | grep -q "status: Accepted"; then
     ID=$(echo "$RESULT" | awk '/^ *id:/ { print $2; exit }')
     echo "Notarisation failed. Apple's log:" >&2
-    xcrun notarytool log "$ID" --keychain-profile "$PROFILE" >&2 || true
+    notary log "$ID" >&2 || true
     exit 1
 fi
 xcrun stapler staple "$DMG"

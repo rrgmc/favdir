@@ -70,9 +70,10 @@ actions on them. `README.md` describes the features and the build for users.
   signs the bundle after macdeployqt, which leaves it unsigned; Apple silicon does not start
   unsigned code. `FAVDIR_CODESIGN_IDENTITY` picks the identity: `-` (ad hoc, the default) or a
   Developer ID, which adds the hardened runtime and timestamp.
-- `scripts/release-macos.sh <version> [--upload]` makes the notarised disk image on a Mac with the
-  Developer ID certificate and the `favdir` notarytool profile. CI cannot notarise: it holds no
-  Apple credentials. Its disk image is ad hoc signed.
+- `scripts/release-macos.sh <version> [--upload]` makes the notarised disk image. Locally it uses
+  the keychain's Developer ID certificate and the `favdir` notarytool profile. The release
+  workflow runs it with a temporary keychain and an App Store Connect API key, from the secrets
+  of the `release` environment. That job holds secrets: keep its actions pinned to commits.
 - `.github/workflows/build.yml` builds and tests on every push. `release.yml` runs when a
   GitHub release tagged `vX.Y.Z` is published: it builds with that version
   (`-DFAVDIR_VERSION`) and attaches the Windows setup and the macOS disk image.

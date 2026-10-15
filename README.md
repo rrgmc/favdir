@@ -182,7 +182,7 @@ xcrun notarytool store-credentials favdir --apple-id <Apple ID> --team-id <team 
 ```
 
 Then build the disk image. `--upload` attaches it to the GitHub release `v<version>` and replaces
-the ad hoc signed one:
+the one there:
 
 ```sh
 sh scripts/release-macos.sh 1.0.0 --upload
@@ -191,9 +191,19 @@ sh scripts/release-macos.sh 1.0.0 --upload
 ### Releases
 
 Publishing a GitHub release tagged `vX.Y.Z` runs the release workflow. It builds and tests
-favdir with that version, then attaches the Windows setup and the macOS disk image to the release. The workflow's disk
-image is not notarised: after it finishes, run `scripts/release-macos.sh <version> --upload`.
-Running the workflow again replaces the notarised disk image with the ad hoc signed one.
+favdir with that version, then attaches the Windows setup and the notarised macOS disk image to
+the release. The macOS job runs `scripts/release-macos.sh` with these secrets of the `release`
+environment:
+
+| Secret | Value |
+|---|---|
+| `MACOS_CERTIFICATE_P12` | The Developer ID Application certificate and its private key, exported as a `.p12` file, in base64 |
+| `MACOS_CERTIFICATE_PASSWORD` | The password of the `.p12` file |
+| `NOTARY_API_KEY` | The contents of an App Store Connect API key file (`AuthKey_<key ID>.p8`) |
+| `NOTARY_API_KEY_ID` | The key ID of that API key |
+| `NOTARY_API_ISSUER` | The issuer ID shown above the list of API keys in App Store Connect |
+
+The environment accepts only `v*` tags and `master`, so other branches cannot use the secrets.
 
 To change the Qt version, edit the version at the top of both setup scripts and in
 `CMakePresets.json`.

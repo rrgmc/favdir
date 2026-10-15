@@ -1,8 +1,9 @@
 name: release
 
 # Publishing a GitHub release tagged vX.Y.Z (or X.Y.Z) builds and tests favdir, then attaches
-# the Windows setup and the macOS disk image to the release. To redo it for an existing release, run the workflow by
-# hand with the tag: the code comes from the tag, this file from the branch it runs on.
+# the Windows setup and the notarised macOS disk image to the release. To redo it for an
+# existing release, run the workflow by hand with the tag: the code comes from the tag, this file
+# from the branch it runs on.
 on:
   release:
     types: [published]
@@ -81,13 +82,18 @@ jobs:
 
   macos-dmg:
     runs-on: macos-latest
+    # The signing secrets live in this environment. It only admits v* tags and master, and it
+    # can require an approval before each run.
+    environment: release
 
     steps:
-      - uses: actions/checkout@v4
+      # Pinned to commits: this job holds the signing secrets.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ env.TAG }}
+          persist-credentials: false
 
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
 
       - name: Install Ninja
         run: brew install ninja
@@ -103,31 +109,52 @@ jobs:
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - name: Cache Qt
-        uses: actions/cache@v4
-        with:
-          path: .qt
-          key: qt-${{ runner.os }}-${{ hashFiles('scripts/setup.*') }}
+      # A keychain of its own, with a random password, holds the Developer ID certificate for
+      # this job only. The last step deletes it.
+      - name: Import the signing certificate
+        env:
+          CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password=$(openssl rand -base64 24)
+          echo "::add-mask::$keychain_password"
+          umask 077
+          echo "$CERTIFICATE_P12" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 3600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$RUNNER_TEMP/certificate.p12" -k "$keychain" \
+            -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/certificate.p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s \
+            -k "$keychain_password" "$keychain" > /dev/null
+          security list-keychains -d user -s "$keychain" \
+            $(security list-keychains -d user | tr -d '"')
 
-      - name: Download Qt
-        run: sh scripts/setup.sh
+      - name: Write the notarisation key
+        env:
+          NOTARY_API_KEY: ${{ secrets.NOTARY_API_KEY }}
+        run: |
+          umask 077
+          printf '%s\n' "$NOTARY_API_KEY" > "$RUNNER_TEMP/notary.p8"
 
-      - name: Configure
-        run: cmake --preset macos "-DFAVDIR_VERSION=${{ steps.version.outputs.version }}"
-
-      - name: Build
-        run: cmake --build --preset macos
-
-      - name: Test
-        run: ctest --preset macos
-
-      - name: Build disk image
-        working-directory: build/macos
-        run: cpack -C Release
+      - name: Build, test, sign and notarise
+        env:
+          FAVDIR_NOTARY_KEY: ${{ runner.temp }}/notary.p8
+          FAVDIR_NOTARY_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          FAVDIR_NOTARY_ISSUER: ${{ secrets.NOTARY_API_ISSUER }}
+        run: sh scripts/release-macos.sh "${{ steps.version.outputs.version }}"
 
       - name: Attach disk image to the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload "$TAG" \
-            "build/macos/favdir-${{ steps.version.outputs.version }}-macos.dmg" --clobber
+            "build/macos-release/favdir-${{ steps.version.outputs.version }}-macos.dmg" --clobber
+
+      - name: Remove the signing keychain and key
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
+          rm -f "$RUNNER_TEMP/notary.p8"
