@@ -193,6 +193,7 @@ void MainWindow::createActions()
     add->setIcon(Icons::toolIcon(QIcon::ThemeIcon::FolderNew));
     edit->setIcon(Icons::toolIcon(QIcon::ThemeIcon::DocumentProperties));
     remove->setIcon(Icons::toolIcon(QIcon::ThemeIcon::ListRemove));
+    copy->setIcon(Icons::toolIcon(QIcon::ThemeIcon::EditCopy));
     m_toggleAction->setIcon(Icons::toolIcon(QIcon::ThemeIcon::SyncSynchronizing));
     library->setIcon(Icons::toolIcon(QIcon::ThemeIcon::FormatJustifyLeft));
     settings->setIcon(Icons::toolIcon(QIcon::ThemeIcon::DocumentPageSetup));
@@ -216,6 +217,7 @@ void MainWindow::createActions()
     addButton(add, tr("Add folder"));
     addButton(edit, tr("Edit"));
     addButton(remove, tr("Remove"));
+    addButton(copy, tr("Copy path"));
     addButton(m_toggleAction, QString());
     toolbar->addSeparator();
     addButton(library, tr("Action library"));
