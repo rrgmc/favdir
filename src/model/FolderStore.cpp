@@ -134,6 +134,17 @@ const Folder *FolderStore::folder(const QUuid &id) const
     return row < 0 ? nullptr : &m_folders.at(row);
 }
 
+const Folder *FolderStore::folderWithPath(const QString &path) const
+{
+    const QString clean = QDir::cleanPath(QDir::fromNativeSeparators(path));
+    for (const Folder &f : m_folders) {
+        if (QDir::cleanPath(QDir::fromNativeSeparators(f.path)).compare(clean, Qt::CaseInsensitive)
+            == 0)
+            return &f;
+    }
+    return nullptr;
+}
+
 QList<Folder> FolderStore::section(bool active, Priority priority) const
 {
     QList<Folder> result;
