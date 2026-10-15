@@ -107,15 +107,19 @@ include(GNUInstallDirs)
 install(TARGETS favdir
     BUNDLE DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+# windeployqt only: the runtime DLLs come from InstallRequiredSystemLibraries below, and Qt
+# Widgets on Direct3D 11 needs neither the redistributable installer nor the shader compilers.
+set(_deploy_options)
+if(WIN32)
+    set(_deploy_options --no-compiler-runtime --no-system-d3d-compiler
+                        --no-system-dxc-compiler --no-opengl-sw)
+endif()
 qt_generate_deploy_app_script(
     TARGET favdir
     OUTPUT_SCRIPT deploy_script
     NO_TRANSLATIONS
     NO_UNSUPPORTED_PLATFORM_ERROR
-    # The runtime DLLs come from InstallRequiredSystemLibraries below; Qt Widgets on Direct3D
-    # 11 needs neither the redistributable installer nor the shader compilers.
-    DEPLOY_TOOL_OPTIONS --no-compiler-runtime --no-system-d3d-compiler --no-system-dxc-compiler
-                        --no-opengl-sw)
+    DEPLOY_TOOL_OPTIONS ${_deploy_options})
 install(SCRIPT ${deploy_script})
 
 # The MSVC runtime DLLs, so the app runs on PCs without the Visual C++ Redistributable.
