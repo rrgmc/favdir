@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Widgets Test)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Widgets Network Test)
 qt_standard_project_setup()
 
 # Model and actions, shared by the app and the tests.
@@ -21,11 +21,37 @@ qt_add_library(favdir_core STATIC
 target_include_directories(favdir_core PUBLIC src)
 target_link_libraries(favdir_core PUBLIC Qt6::Gui)
 
+# Widgets, shared by the app and the GUI test.
+qt_add_library(favdir_ui STATIC
+    src/ui/ActionTableEditor.h src/ui/ActionTableEditor.cpp
+    src/ui/ActionsDialog.h src/ui/ActionsDialog.cpp
+    src/ui/FolderDelegate.h src/ui/FolderDelegate.cpp
+    src/ui/FolderDialog.h src/ui/FolderDialog.cpp
+    src/ui/Icons.h src/ui/Icons.cpp
+    src/ui/MainWindow.h src/ui/MainWindow.cpp
+    src/ui/PriorityBoard.h src/ui/PriorityBoard.cpp
+    src/ui/SectionView.h src/ui/SectionView.cpp
+    src/ui/SettingsDialog.h src/ui/SettingsDialog.cpp
+)
+target_link_libraries(favdir_ui PUBLIC favdir_core Qt6::Widgets)
+
 qt_add_executable(favdir WIN32 MACOSX_BUNDLE
     src/main.cpp
+    src/platform/GlobalHotkey.h src/platform/GlobalHotkey.cpp src/platform/GlobalHotkeyBackend.h
+    src/platform/SingleInstance.h src/platform/SingleInstance.cpp
 )
 
-target_link_libraries(favdir PRIVATE favdir_core Qt6::Widgets)
+if(WIN32)
+    target_sources(favdir PRIVATE src/platform/GlobalHotkey_win.cpp)
+elseif(APPLE)
+    target_sources(favdir PRIVATE src/platform/GlobalHotkey_mac.cpp)
+    target_link_libraries(favdir PRIVATE "-framework Carbon")
+else()
+    target_sources(favdir PRIVATE src/platform/GlobalHotkey_none.cpp)
+endif()
+
+target_compile_definitions(favdir PRIVATE FAVDIR_VERSION="${PROJECT_VERSION}")
+target_link_libraries(favdir PRIVATE favdir_ui Qt6::Network)
 
 set_target_properties(favdir PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER com.rangelreale.favdir
@@ -43,13 +69,16 @@ endif()
 
 enable_testing()
 
-foreach(test_name tst_folderstore tst_actionrunner)
+foreach(test_name tst_folderstore tst_actionrunner tst_mainwindow)
     qt_add_executable(${test_name} tests/${test_name}.cpp)
-    target_link_libraries(${test_name} PRIVATE favdir_core Qt6::Test)
+    target_link_libraries(${test_name} PRIVATE favdir_ui Qt6::Test)
     # TAP: the plain-text logger prints nothing when stdout is a pipe on Windows.
     add_test(NAME ${test_name} COMMAND ${test_name} -o -,tap)
     if(WIN32)
         set_tests_properties(${test_name} PROPERTIES
             ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:${QT6_INSTALL_PREFIX}/${QT6_INSTALL_BINS}")
     endif()
+    set_property(TEST ${test_name} APPEND PROPERTY ENVIRONMENT
+        "QT_QPA_PLATFORM=offscreen"
+        "QT_PLUGIN_PATH=${QT6_INSTALL_PREFIX}/${QT6_INSTALL_PLUGINS}")
 endforeach()
