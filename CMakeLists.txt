@@ -38,6 +38,7 @@ qt_add_library(favdir_ui STATIC
     src/ui/FolderDelegate.h src/ui/FolderDelegate.cpp
     src/ui/FolderDialog.h src/ui/FolderDialog.cpp
     src/ui/Icons.h src/ui/Icons.cpp
+    src/ui/ItemCheckStyle.h src/ui/ItemCheckStyle.cpp
     src/ui/MainWindow.h src/ui/MainWindow.cpp
     src/ui/PriorityBoard.h src/ui/PriorityBoard.cpp
     src/ui/SectionView.h src/ui/SectionView.cpp
