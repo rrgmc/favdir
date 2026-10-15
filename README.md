@@ -3,6 +3,8 @@
 A small desktop app that keeps a list of the folders you use most, and opens each one in the
 tool you need with one click or one key. It runs on Windows and macOS.
 
+![The favdir window with folders in the High, Medium and Low sections](docs/screenshot.png)
+
 - Folders sit in **High**, **Medium** and **Low** sections, on an **Active** and an
   **Inactive** tab. Move them between sections and tabs by dragging or with the keyboard.
 - Each folder shows numbered **actions**. favdir starts with "Explorer" (or "Finder") and
@@ -129,6 +131,11 @@ The executable icon comes from `resources/favdir.ico` and `resources/favdir.icns
 generated from the drawing in `src/ui/Icons.cpp`; after changing it, rebuild them with
 `cmake --build --preset windows --target make_icons`, then run
 `build/windows/bin/Release/make_icons resources`.
+
+The screenshot above is `docs/screenshot.png`, drawn with made-up folders by the
+`make_screenshot` target. After changing the look of the window, rebuild it with
+`cmake --build --preset windows --target make_screenshot`, then run
+`build/windows/bin/Release/make_screenshot docs/screenshot.png`.
 
 ### Windows setup
 

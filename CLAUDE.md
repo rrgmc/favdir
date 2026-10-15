@@ -55,6 +55,8 @@ actions on them. `README.md` describes the features and the build for users.
 - The app icon is drawn in `src/ui/Icons.cpp`. `resources/favdir.ico` and `favdir.icns` are
   generated from it by the `make_icons` target and committed; regenerate them after changing
   the drawing.
+- `docs/screenshot.png` (in the README) is drawn with made-up data by the `make_screenshot`
+  target. Regenerate it after visible changes to the main window.
 - `CMakeLists.txt` drops the AGL framework from Qt's OpenGL target on macOS (Xcode 26 no
   longer ships it). Remove the workaround when moving to a Qt version that no longer links AGL.
 
