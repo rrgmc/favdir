@@ -16,7 +16,7 @@ tool you need with one click or one key. It runs on Windows and macOS.
 
 | Key | Effect |
 |---|---|
-| Ctrl+Alt+Space (Windows), ⌃⌥F (macOS) | Show or hide favdir from anywhere; change it in Settings |
+| Win+Alt+F (Windows), ⌃⌥F (macOS) | Show or hide favdir from anywhere; change it in Settings |
 | Type | Filter by name or path |
 | Down (in the filter) | Move into the list |
 | Enter (in the filter) | Run the first action of the first match |
