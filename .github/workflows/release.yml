@@ -1,12 +1,14 @@
 name: release
 
-# Publishing a GitHub release tagged vX.Y.Z (or X.Y.Z) builds and tests favdir, then attaches
-# the Windows setup and the notarised macOS disk image to the release. To redo it for an
-# existing release, run the workflow by hand with the tag: the code comes from the tag, this file
-# from the branch it runs on.
+# Pushing a tag vX.Y.Z (or X.Y.Z) publishes a GitHub release for it, builds and tests favdir,
+# then attaches the Windows setup and the notarised macOS disk image to the release. To redo it
+# for an existing tag, run the workflow by hand with the tag: the code comes from the tag, this
+# file from the branch it runs on.
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+      - '[0-9]*.[0-9]*.[0-9]*'
   workflow_dispatch:
     inputs:
       tag:
@@ -14,13 +16,45 @@ on:
         required: true
 
 env:
-  TAG: ${{ github.event.release.tag_name || inputs.tag }}
+  TAG: ${{ inputs.tag || github.ref_name }}
 
 permissions:
   contents: write
 
 jobs:
+  # Checks the tag and publishes its release, unless one exists already. A release published
+  # with the workflow's token does not start other workflows, so this does not run twice.
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Version from tag
+        id: version
+        run: |
+          tag="$TAG"
+          version="${tag#v}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Release tag '$tag' is not vX.Y.Z or X.Y.Z"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Release $TAG exists already"
+          else
+            gh release create "$TAG" --verify-tag --generate-notes \
+              --title "favdir ${{ steps.version.outputs.version }}"
+          fi
+
   windows-setup:
+    needs: release
     runs-on: windows-latest
 
     steps:
@@ -36,18 +70,6 @@ jobs:
       - name: MSVC environment
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Version from tag
-        id: version
-        shell: bash
-        run: |
-          tag="$TAG"
-          version="${tag#v}"
-          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Release tag '$tag' is not vX.Y.Z or X.Y.Z"
-            exit 1
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-
       - name: Cache Qt
         uses: actions/cache@v4
         with:
@@ -60,7 +82,7 @@ jobs:
       - name: Configure
         # bash, not PowerShell: PowerShell splits -DFAVDIR_VERSION=1.0.0 at the first dot.
         shell: bash
-        run: cmake --preset windows-ninja "-DFAVDIR_VERSION=${{ steps.version.outputs.version }}"
+        run: cmake --preset windows-ninja "-DFAVDIR_VERSION=${{ needs.release.outputs.version }}"
 
       - name: Build
         run: cmake --build --preset windows-ninja
@@ -78,9 +100,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload "$TAG" \
-            "build/windows-ninja/favdir-${{ steps.version.outputs.version }}-win64.exe" --clobber
+            "build/windows-ninja/favdir-${{ needs.release.outputs.version }}-win64.exe" --clobber
 
   macos-dmg:
+    needs: release
     runs-on: macos-latest
     # The signing secrets live in this environment. It only admits v* tags and master, and it
     # can require an approval before each run.
@@ -97,17 +120,6 @@ jobs:
 
       - name: Install Ninja
         run: brew install ninja
-
-      - name: Version from tag
-        id: version
-        run: |
-          tag="$TAG"
-          version="${tag#v}"
-          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Release tag '$tag' is not vX.Y.Z or X.Y.Z"
-            exit 1
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       # A keychain of its own, with a random password, holds the Developer ID certificate for
       # this job only. The last step deletes it.
@@ -149,14 +161,14 @@ jobs:
           FAVDIR_NOTARY_KEY: ${{ runner.temp }}/notary.p8
           FAVDIR_NOTARY_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
           FAVDIR_NOTARY_ISSUER: ${{ secrets.NOTARY_API_ISSUER }}
-        run: sh scripts/release-macos.sh "${{ steps.version.outputs.version }}"
+        run: sh scripts/release-macos.sh "${{ needs.release.outputs.version }}"
 
       - name: Attach disk image to the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload "$TAG" \
-            "build/macos-release/favdir-${{ steps.version.outputs.version }}-macos.dmg" --clobber
+            "build/macos-release/favdir-${{ needs.release.outputs.version }}-macos.dmg" --clobber
 
       - name: Remove the signing keychain and key
         if: always()
