@@ -42,6 +42,8 @@ public:
 
     const QList<Folder> &folders() const { return m_folders; }
     const Folder *folder(const QUuid &id) const;
+    // The folder with this path (compared cleaned and ignoring case), or nullptr.
+    const Folder *folderWithPath(const QString &path) const;
     QList<Folder> section(bool active, Priority priority) const;
     // Position of the folder inside its section, or -1.
     int indexInSection(const QUuid &id) const;

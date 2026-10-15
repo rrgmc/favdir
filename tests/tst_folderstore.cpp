@@ -1,6 +1,7 @@
 #include "model/FolderStore.h"
 #include "model/SectionModel.h"
 
+#include <QDir>
 #include <QFile>
 #include <QMimeData>
 #include <QSignalSpy>
@@ -314,6 +315,23 @@ private slots:
         high.dropMimeData(&mime, Qt::CopyAction, -1, 0, {});
         QCOMPARE(store.folders().size(), 1);
         QCOMPARE(store.folders().first().priority, Priority::High);
+    }
+
+    void folderWithPathIgnoresCaseAndSeparators()
+    {
+        FolderStore store(m_path);
+        store.setAutoSave(false);
+        QVERIFY(store.load());
+        Folder f;
+        f.name = "a";
+        f.path = m_dir.path();
+        const QUuid id = store.addFolder(f);
+
+        const Folder *found = store.folderWithPath(QDir::toNativeSeparators(m_dir.path() + "/"));
+        QVERIFY(found);
+        QCOMPARE(found->id, id);
+        QVERIFY(store.folderWithPath(m_dir.path().toUpper()));
+        QVERIFY(!store.folderWithPath(m_dir.path() + "/other"));
     }
 
 private:

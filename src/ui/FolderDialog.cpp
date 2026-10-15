@@ -118,6 +118,13 @@ void FolderDialog::accept()
         m_path->setFocus();
         return;
     }
+    const Folder *other = m_store->folderWithPath(f.path);
+    if (other && other->id != f.id) {
+        QMessageBox::warning(this, windowTitle(),
+                             tr("%1 already has this path.").arg(other->name));
+        m_path->setFocus();
+        return;
+    }
     if (f.name.isEmpty()) {
         const QString base = QFileInfo(f.path).fileName();
         m_name->setText(base.isEmpty() ? QDir::toNativeSeparators(f.path) : base);

@@ -161,13 +161,8 @@ bool SectionModel::dropMimeData(const QMimeData *data, Qt::DropAction action, in
     QList<QUuid> ids = idsFromMime(data);
     if (ids.isEmpty()) {
         for (const QString &path : droppedDirectories(data)) {
-            QUuid existing;
-            for (const Folder &f : m_store->folders()) {
-                if (normalizedPath(f.path).compare(path, Qt::CaseInsensitive) == 0) {
-                    existing = f.id;
-                    break;
-                }
-            }
+            const Folder *found = m_store->folderWithPath(path);
+            QUuid existing = found ? found->id : QUuid();
             if (existing.isNull()) {
                 Folder f;
                 f.name = QFileInfo(path).fileName();

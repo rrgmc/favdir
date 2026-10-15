@@ -443,13 +443,11 @@ void MainWindow::addFolder()
 void MainWindow::addFolderPath(const QString &path)
 {
     const QString clean = QDir::cleanPath(QDir::fromNativeSeparators(path));
-    for (const Folder &f : m_store->folders()) {
-        if (QDir::cleanPath(f.path).compare(clean, Qt::CaseInsensitive) == 0) {
-            m_tabs->setCurrentWidget(board(f.active));
-            board(f.active)->selectId(f.id, true);
-            showMessage(tr("%1 is already in the list.").arg(f.name));
-            return;
-        }
+    if (const Folder *existing = m_store->folderWithPath(clean)) {
+        m_tabs->setCurrentWidget(board(existing->active));
+        board(existing->active)->selectId(existing->id, true);
+        showMessage(tr("%1 is already in the list.").arg(existing->name));
+        return;
     }
     Folder f;
     f.path = clean;
