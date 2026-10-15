@@ -137,6 +137,20 @@ The screenshot above is `docs/screenshot.png`, drawn with made-up folders by the
 `cmake --build --preset windows --target make_screenshot`, then run
 `build/windows/bin/Release/make_screenshot docs/screenshot.png`.
 
+### Tasks
+
+`Taskfile.yml` wraps the steps above for [Task](https://taskfile.dev). Each task uses the
+preset for the current platform. Run `task --list` to see them all.
+
+```sh
+task test         # download Qt if needed, configure, build and test
+task run          # start favdir with a scratch data file in the build folder
+task install      # copy the app and the Qt libraries into dist/
+task package      # make the Windows setup or the macOS disk image
+task icons        # regenerate the icon files
+task screenshot   # regenerate docs/screenshot.png
+```
+
 ### Windows setup
 
 With [NSIS](https://nsis.sourceforge.io/) installed, `cpack` builds `favdir-<version>-win64.exe`
