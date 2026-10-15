@@ -110,6 +110,7 @@ include(GNUInstallDirs)
 install(TARGETS favdir
     BUNDLE DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES LICENSE DESTINATION .)
 # windeployqt only: the runtime DLLs come from InstallRequiredSystemLibraries below, and Qt
 # Widgets on Direct3D 11 needs neither the redistributable installer nor the shader compilers.
 set(_deploy_options)
@@ -145,6 +146,8 @@ set(CPACK_NSIS_DISPLAY_NAME favdir)
 set(CPACK_NSIS_INSTALLED_ICON_NAME [=[bin\favdir.exe]=])
 set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
 set(CPACK_NSIS_URL_INFO_ABOUT "${CPACK_PACKAGE_HOMEPAGE_URL}")
+# Shown on the setup's license page.
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
 file(TO_NATIVE_PATH "${CMAKE_SOURCE_DIR}/resources/favdir.ico" _favdir_ico)
 
 # Icons, and a checkbox on the last page that starts favdir at sign-in. CPack has no hook for
