@@ -1,7 +1,7 @@
 name: release
 
 # Publishing a GitHub release tagged vX.Y.Z (or X.Y.Z) builds and tests favdir, then attaches
-# the Windows setup to the release. To redo it for an existing release, run the workflow by
+# the Windows setup and the macOS disk image to the release. To redo it for an existing release, run the workflow by
 # hand with the tag: the code comes from the tag, this file from the branch it runs on.
 on:
   release:
@@ -78,3 +78,56 @@ jobs:
         run: |
           gh release upload "$TAG" \
             "build/windows-ninja/favdir-${{ steps.version.outputs.version }}-win64.exe" --clobber
+
+  macos-dmg:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Install Ninja
+        run: brew install ninja
+
+      - name: Version from tag
+        id: version
+        run: |
+          tag="$TAG"
+          version="${tag#v}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Release tag '$tag' is not vX.Y.Z or X.Y.Z"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Qt
+        uses: actions/cache@v4
+        with:
+          path: .qt
+          key: qt-${{ runner.os }}-${{ hashFiles('scripts/setup.*') }}
+
+      - name: Download Qt
+        run: sh scripts/setup.sh
+
+      - name: Configure
+        run: cmake --preset macos "-DFAVDIR_VERSION=${{ steps.version.outputs.version }}"
+
+      - name: Build
+        run: cmake --build --preset macos
+
+      - name: Test
+        run: ctest --preset macos
+
+      - name: Build disk image
+        working-directory: build/macos
+        run: cpack -C Release
+
+      - name: Attach disk image to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$TAG" \
+            "build/macos/favdir-${{ steps.version.outputs.version }}-macos.dmg" --clobber

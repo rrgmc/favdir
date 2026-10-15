@@ -151,10 +151,26 @@ The setup installs favdir with the Qt and Visual C++ runtime libraries it needs,
 menu entry, and on its last page offers to start favdir when you sign in. favdir then starts
 hidden in the tray (`favdir --hidden`).
 
+### macOS disk image
+
+`cpack` builds `favdir-<version>-macos.dmg` from a Release build:
+
+```sh
+cd build/macos
+cpack -C Release
+```
+
+The disk image holds `favdir.app`, with the Qt libraries it needs, and a link to the
+Applications folder. Drag the app onto the link to install it.
+
+The app is signed ad hoc, not with an Apple Developer ID, and it is not notarised. The first time
+you start a downloaded copy, macOS refuses to open it. Open System Settings > Privacy & Security
+and click **Open Anyway** next to the message about favdir.
+
 ### Releases
 
 Publishing a GitHub release tagged `vX.Y.Z` runs the release workflow. It builds and tests
-favdir with that version, then attaches the Windows setup to the release.
+favdir with that version, then attaches the Windows setup and the macOS disk image to the release.
 
 To change the Qt version, edit the version at the top of both setup scripts and in
 `CMakePresets.json`.

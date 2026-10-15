@@ -126,21 +126,38 @@ qt_generate_deploy_app_script(
     DEPLOY_TOOL_OPTIONS ${_deploy_options})
 install(SCRIPT ${deploy_script})
 
+# macdeployqt edits the bundle's binaries, which leaves it unsigned, and macOS on Apple silicon
+# does not start unsigned code. Sign it ad hoc: there is no Developer ID here, so the first start
+# of a downloaded copy still needs Open in Privacy & Security.
+if(APPLE)
+    install(CODE [=[
+        execute_process(
+            COMMAND codesign --force --deep --sign - "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/favdir.app"
+            COMMAND_ERROR_IS_FATAL ANY)
+    ]=])
+endif()
+
 # The MSVC runtime DLLs, so the app runs on PCs without the Visual C++ Redistributable.
 if(WIN32)
     set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION ${CMAKE_INSTALL_BINDIR})
     include(InstallRequiredSystemLibraries)
 endif()
 
-# Windows setup: `cpack --config build/<preset>/CPackConfig.cmake -C Release` builds
-# favdir-<version>-win64.exe with NSIS.
+# Setup: `cpack -C Release` in build/<preset> builds favdir-<version>-win64.exe with NSIS on
+# Windows and favdir-<version>-macos.dmg on macOS.
 set(CPACK_PACKAGE_NAME favdir)
 set(CPACK_PACKAGE_VENDOR favdir)
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Favourite folders with one-click actions")
 set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/rrgmc/favdir")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY favdir)
 set(CPACK_PACKAGE_EXECUTABLES favdir favdir)
-set(CPACK_GENERATOR NSIS)
+if(APPLE)
+    set(CPACK_GENERATOR DragNDrop)
+    set(CPACK_PACKAGE_FILE_NAME favdir-${PROJECT_VERSION}-macos)
+    set(CPACK_DMG_VOLUME_NAME favdir)
+else()
+    set(CPACK_GENERATOR NSIS)
+endif()
 set(CPACK_NSIS_PACKAGE_NAME favdir)
 set(CPACK_NSIS_DISPLAY_NAME favdir)
 set(CPACK_NSIS_INSTALLED_ICON_NAME [=[bin\favdir.exe]=])

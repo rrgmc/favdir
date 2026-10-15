@@ -66,9 +66,12 @@ actions on them. `README.md` describes the features and the build for users.
 - `cpack -C Release` in a Windows build folder makes the NSIS setup. The NSIS snippets in
   `CMakeLists.txt` rely on `CPACK_VERBATIM_VARIABLES`; the finish page "start at sign-in" option
   is injected through `CPACK_NSIS_INSTALLER_MUI_ICON_CODE`.
+- `cpack -C Release` in a macOS build folder makes the DragNDrop disk image. The install step
+  signs the bundle ad hoc after macdeployqt, which leaves it unsigned; Apple silicon does not
+  start unsigned code.
 - `.github/workflows/build.yml` builds and tests on every push. `release.yml` runs when a
   GitHub release tagged `vX.Y.Z` is published: it builds with that version
-  (`-DFAVDIR_VERSION`) and attaches the Windows setup.
+  (`-DFAVDIR_VERSION`) and attaches the Windows setup and the macOS disk image.
 
 ## Public repository
 
