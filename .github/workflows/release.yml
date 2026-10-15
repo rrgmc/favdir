@@ -132,12 +132,17 @@ jobs:
           security list-keychains -d user -s "$keychain" \
             $(security list-keychains -d user | tr -d '"')
 
-      - name: Write the notarisation key
+      # Checks the key before the build, and shows notarytool's error if Apple refuses it.
+      - name: Write and check the notarisation key
         env:
           NOTARY_API_KEY: ${{ secrets.NOTARY_API_KEY }}
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER: ${{ secrets.NOTARY_API_ISSUER }}
         run: |
           umask 077
           printf '%s\n' "$NOTARY_API_KEY" > "$RUNNER_TEMP/notary.p8"
+          xcrun notarytool history --key "$RUNNER_TEMP/notary.p8" \
+            --key-id "$NOTARY_API_KEY_ID" --issuer "$NOTARY_API_ISSUER" > /dev/null
 
       - name: Build, test, sign and notarise
         env:

@@ -55,7 +55,8 @@ if ! security find-identity -v -p codesigning | grep -q "\"$IDENTITY"; then
     echo "No codesigning identity matching '$IDENTITY' in the keychain." >&2
     exit 1
 fi
-if ! notary history >/dev/null 2>&1; then
+if ! CHECK=$(notary history 2>&1); then
+    echo "$CHECK" >&2
     echo "The notarytool credentials do not work. For a profile, store them with:" >&2
     echo "  xcrun notarytool store-credentials $PROFILE --apple-id <Apple ID> --team-id <team ID>" >&2
     exit 1
