@@ -65,6 +65,21 @@ Every action has:
 - a **Shell** option, which runs the command through `cmd /c` (Windows) or `/bin/sh -c`
   (macOS). Use it for scripts, `.cmd` files, pipes or `&&`.
 
+The **Add** button in either table has templates for common commands. Each one asks for what
+it needs and fills in an ordinary action, which you can then edit:
+
+- **Open with application**: pick an app (`.app` on macOS, `.exe`, `.cmd` or `.bat` on
+  Windows). On macOS this writes `open -na "/Applications/App.app" "{path}"`.
+- **Terminal in folder**: Terminal on macOS; Windows Terminal (`wt -d "{path}"`) or `cmd` on
+  Windows.
+- **Terminal running a command**: opens a terminal in the folder and runs a command in it, such
+  as `claude`. On Windows this writes `wt -d "{path}" cmd /k claude`; on macOS, an `osascript`
+  command for Terminal.
+- **iTerm in folder** and **iTerm running a command**: the same for iTerm2, shown on macOS
+  when iTerm2 is in `/Applications` or `~/Applications`.
+- **Run a command in the background**: a **Shell** command with no window, such as
+  `./build.sh`.
+
 When an action fails, the status bar shows why. A command that cannot start reports this at
 once. A **Shell** command reports its exit code and error output when it exits with an error.
 If the window is hidden, the message appears as a tray notification.
@@ -77,12 +92,12 @@ a Microsoft Store app on Windows 10.
 
 | Name | Windows command | macOS command | Shell |
 |---|---|---|---|
-| Claude | `wt -d "{path}" cmd /k claude` | `osascript -e 'tell application "Terminal"' -e 'activate' -e 'do script "cd \"{path}\" && claude"' -e 'end tell'` | macOS only |
 | VS Code | `code "{path}"` | `open -a "Visual Studio Code" "{path}"` | Windows only |
 | Git Bash | `"C:\Program Files\Git\git-bash.exe" --cd="{path}"` | | |
 
-On Windows, `code` is a `.cmd` script, so it needs **Shell**. On macOS, apps started from the
-Dock do not see your shell's `PATH`, so `open -a` is more reliable than `code`.
+The templates above cover terminals and most applications. On Windows, `code` is a `.cmd`
+script, so it needs **Shell**. On macOS, apps started from the Dock do not see your shell's
+`PATH`, so `open -a` is more reliable than `code`.
 
 ## Data
 

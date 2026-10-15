@@ -26,6 +26,7 @@ qt_add_library(favdir_core STATIC
     src/model/FolderStore.h src/model/FolderStore.cpp
     src/model/SectionModel.h src/model/SectionModel.cpp
     src/actions/ActionRunner.h src/actions/ActionRunner.cpp
+    src/actions/ActionTemplates.h src/actions/ActionTemplates.cpp
     src/actions/DefaultActions.h src/actions/DefaultActions.cpp
 )
 target_include_directories(favdir_core PUBLIC src)

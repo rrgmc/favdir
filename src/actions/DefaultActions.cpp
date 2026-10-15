@@ -1,5 +1,7 @@
 #include "DefaultActions.h"
 
+#include "ActionTemplates.h"
+
 #include <QCoreApplication>
 #include <QStandardPaths>
 
@@ -18,14 +20,12 @@ QList<Action> create()
 #if defined(Q_OS_WIN)
     return {
         make("Explorer", QString::fromLatin1(Action::OpenCommand)),
-        make("Terminal", hasWindowsTerminal() ? QStringLiteral(R"(wt -d "{path}")")
-                                              // Started in the folder, in a new console.
-                                              : QStringLiteral("cmd")),
+        ActionTemplates::terminal(),
     };
 #elif defined(Q_OS_MACOS)
     return {
         make("Finder", QString::fromLatin1(Action::OpenCommand)),
-        make("Terminal", QStringLiteral(R"(open -a Terminal "{path}")")),
+        ActionTemplates::terminal(),
     };
 #else
     return {

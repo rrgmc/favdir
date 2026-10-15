@@ -1,4 +1,5 @@
 #include "actions/ActionRunner.h"
+#include "actions/ActionTemplates.h"
 #include "actions/DefaultActions.h"
 
 #include <QDir>
@@ -25,7 +26,7 @@ private slots:
         Folder f;
         f.path = QStringLiteral("/work/my repo");
         const Action a{QUuid::createUuid(), QStringLiteral("t"),
-                       QStringLiteral(R"(wt -d "{path}" cmd /k claude)"), false};
+                       QStringLiteral("wt -d \"{path}\" cmd /k claude"), false};
         const auto inv = ActionRunner::prepare(a, f);
         QVERIFY(inv);
         QCOMPARE(inv->kind, ActionRunner::Invocation::Kind::Process);
@@ -137,6 +138,90 @@ private slots:
             QString error;
             QVERIFY2(ActionRunner::prepare(a, f, &error), qPrintable(error));
         }
+    }
+
+    void templatesParse()
+    {
+        Folder f;
+        f.name = QStringLiteral("n");
+        f.path = QStringLiteral("/work/a b");
+        const QList<Action> actions{
+            ActionTemplates::openWithApplication(QStringLiteral("/Apps/My App.app")),
+            ActionTemplates::terminal(),
+            ActionTemplates::terminalRunning(QStringLiteral("claude --resume")),
+            ActionTemplates::background(QStringLiteral("./build.sh")),
+            ActionTemplates::iTerm(),
+            ActionTemplates::iTermRunning(QStringLiteral("claude")),
+        };
+        for (const Action &a : actions) {
+            QVERIFY(!a.name.isEmpty());
+            QString error;
+            QVERIFY2(ActionRunner::prepare(a, f, &error), qPrintable(error));
+        }
+    }
+
+    void openWithApplicationCommand()
+    {
+#if defined(Q_OS_MACOS)
+        const Action a =
+            ActionTemplates::openWithApplication(QStringLiteral("/Applications/My App.app"));
+        QCOMPARE(a.name, QStringLiteral("My App"));
+        QCOMPARE(a.command, QStringLiteral("open -na \"/Applications/My App.app\" \"{path}\""));
+        QVERIFY(!a.shell);
+#elif defined(Q_OS_WIN)
+        const Action exe = ActionTemplates::openWithApplication(QStringLiteral("C:/Tools/My App.exe"));
+        QCOMPARE(exe.name, QStringLiteral("My App"));
+        QCOMPARE(exe.command, QStringLiteral("\"C:\\Tools\\My App.exe\" \"{path}\""));
+        QVERIFY(!exe.shell);
+        QVERIFY(ActionTemplates::openWithApplication(QStringLiteral("C:/Tools/run.CMD")).shell);
+#else
+        QSKIP("Windows and macOS only");
+#endif
+    }
+
+    void terminalRunningCommand()
+    {
+#if defined(Q_OS_MACOS)
+        const Action a = ActionTemplates::terminalRunning(QStringLiteral("echo \"it's\""));
+        QCOMPARE(a.name, QStringLiteral("echo \"it's\""));
+        QVERIFY(a.shell);
+        QCOMPARE(a.command,
+                 QStringLiteral("osascript -e 'tell application \"Terminal\"' -e 'activate' "
+                                "-e 'do script \"cd \\\"{path}\\\" && echo "
+                                "\\\"it'\\''s\\\"\"' -e 'end tell'"));
+#elif defined(Q_OS_WIN)
+        const Action a = ActionTemplates::terminalRunning(QStringLiteral("claude"));
+        QCOMPARE(a.command, DefaultActions::hasWindowsTerminal()
+                                ? QStringLiteral("wt -d \"{path}\" cmd /k claude")
+                                : QStringLiteral("cmd /k claude"));
+        QVERIFY(!a.shell);
+#else
+        QSKIP("Windows and macOS only");
+#endif
+    }
+
+    void iTermCommands()
+    {
+        const Action open = ActionTemplates::iTerm();
+        QCOMPARE(open.command, QStringLiteral("open -a iTerm \"{path}\""));
+        QVERIFY(!open.shell);
+
+        const Action run = ActionTemplates::iTermRunning(QStringLiteral("claude"));
+        QCOMPARE(run.name, QStringLiteral("claude"));
+        QVERIFY(run.shell);
+        QCOMPARE(run.command,
+                 QStringLiteral("osascript -e 'tell application \"iTerm\"' -e 'activate' "
+                                "-e 'set w to (create window with default profile)' "
+                                "-e 'tell current session of w to write text "
+                                "\"cd \\\"{path}\\\" && claude\"' -e 'end tell'"));
+    }
+
+    void backgroundUsesShell()
+    {
+        const Action a = ActionTemplates::background(QStringLiteral("  npm run dev "));
+        QCOMPARE(a.name, QStringLiteral("npm run dev"));
+        QCOMPARE(a.command, QStringLiteral("npm run dev"));
+        QVERIFY(a.shell);
     }
 };
 
