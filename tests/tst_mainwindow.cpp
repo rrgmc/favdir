@@ -8,13 +8,16 @@
 #include <QClipboard>
 #include <QDragEnterEvent>
 #include <QLineEdit>
+#include <QMessageBox>
 #include <QMimeData>
+#include <QPushButton>
 #include <QScrollBar>
 #include <QStatusBar>
 #include <QTableWidget>
 #include <QTabWidget>
 #include <QTemporaryDir>
 #include <QTest>
+#include <QTimer>
 
 namespace {
 QStringList names(const QList<Folder> &folders)
@@ -253,6 +256,38 @@ private slots:
         QTest::keyClick(table, Qt::Key_Up, mods);
         QCOMPARE(order(), (QStringList{"b", "a", "c"}));
         QCOMPARE(table->currentRow(), 1);
+    }
+
+    void actionLibraryAsksBeforeRemoving()
+    {
+        ActionTableEditor editor(ActionTableEditor::Mode::Library);
+        editor.setActions({Action{QUuid::createUuid(), QStringLiteral("a"), QStringLiteral("x"),
+                                  false, true}});
+        editor.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&editor));
+        auto *table = editor.findChild<QTableWidget *>();
+        QVERIFY(table);
+        table->setCurrentCell(0, 0);
+        QPushButton *remove = nullptr;
+        for (QPushButton *b : editor.findChildren<QPushButton *>())
+            if (b->text() == QStringLiteral("&Remove"))
+                remove = b;
+        QVERIFY(remove);
+
+        // Answers the confirmation once it is open.
+        const auto answerWith = [](QMessageBox::StandardButton button) {
+            QTimer::singleShot(0, [button] {
+                auto *box = qobject_cast<QMessageBox *>(QApplication::activeModalWidget());
+                QVERIFY(box);
+                box->button(button)->click();
+            });
+        };
+        answerWith(QMessageBox::No);
+        remove->click();
+        QCOMPARE(editor.actions().size(), 1);
+        answerWith(QMessageBox::Yes);
+        remove->click();
+        QCOMPARE(editor.actions().size(), 0);
     }
 
 private:
