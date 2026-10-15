@@ -10,7 +10,22 @@
       "cacheVariables": {
         "CMAKE_PREFIX_PATH": "${sourceDir}/.qt/6.8.3/msvc2022_64"
       },
-      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "windows-ninja",
+      "displayName": "Windows (Ninja, any MSVC; run from a developer prompt)",
+      "inherits": "windows",
+      "generator": "Ninja Multi-Config",
+      "binaryDir": "${sourceDir}/build/windows-ninja",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      }
     },
     {
       "name": "macos",
@@ -21,27 +36,64 @@
         "CMAKE_PREFIX_PATH": "${sourceDir}/.qt/6.8.3/macos",
         "CMAKE_OSX_ARCHITECTURES": "arm64;x86_64"
       },
-      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" }
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
+      }
     }
   ],
   "buildPresets": [
-    { "name": "windows", "configurePreset": "windows", "configuration": "Release" },
-    { "name": "windows-debug", "configurePreset": "windows", "configuration": "Debug" },
-    { "name": "macos", "configurePreset": "macos", "configuration": "Release" },
-    { "name": "macos-debug", "configurePreset": "macos", "configuration": "Debug" }
+    {
+      "name": "windows",
+      "configurePreset": "windows",
+      "configuration": "Release"
+    },
+    {
+      "name": "windows-debug",
+      "configurePreset": "windows",
+      "configuration": "Debug"
+    },
+    {
+      "name": "windows-ninja",
+      "configurePreset": "windows-ninja",
+      "configuration": "Release"
+    },
+    {
+      "name": "macos",
+      "configurePreset": "macos",
+      "configuration": "Release"
+    },
+    {
+      "name": "macos-debug",
+      "configurePreset": "macos",
+      "configuration": "Debug"
+    }
   ],
   "testPresets": [
     {
       "name": "windows",
       "configurePreset": "windows",
       "configuration": "Release",
-      "output": { "outputOnFailure": true }
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "windows-ninja",
+      "configurePreset": "windows-ninja",
+      "configuration": "Release",
+      "output": {
+        "outputOnFailure": true
+      }
     },
     {
       "name": "macos",
       "configurePreset": "macos",
       "configuration": "Release",
-      "output": { "outputOnFailure": true }
+      "output": {
+        "outputOnFailure": true
+      }
     }
   ]
 }

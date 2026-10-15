@@ -9,6 +9,14 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 find_package(Qt6 6.8 REQUIRED COMPONENTS Widgets Network Test)
 qt_standard_project_setup()
 
+# Qt 6.8's FindWrapOpenGL links the AGL framework, which Xcode 26 no longer ships. Nothing here
+# uses AGL, so drop it.
+if(APPLE AND TARGET WrapOpenGL::WrapOpenGL)
+    get_target_property(_gl_libs WrapOpenGL::WrapOpenGL INTERFACE_LINK_LIBRARIES)
+    list(FILTER _gl_libs EXCLUDE REGEX "AGL")
+    set_target_properties(WrapOpenGL::WrapOpenGL PROPERTIES INTERFACE_LINK_LIBRARIES "${_gl_libs}")
+endif()
+
 # Model and actions, shared by the app and the tests.
 qt_add_library(favdir_core STATIC
     src/model/Action.h src/model/Action.cpp

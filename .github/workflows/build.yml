@@ -11,7 +11,8 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            preset: windows
+            # The runner's Visual Studio version changes over time; Ninja works with any.
+            preset: windows-ninja
             setup: pwsh -File scripts/setup.ps1
           - os: macos-latest
             preset: macos
@@ -23,9 +24,17 @@ jobs:
 
       - uses: astral-sh/setup-uv@v5
 
-      - name: Install Ninja
+      - name: Install Ninja (macOS)
         if: runner.os == 'macOS'
         run: brew install ninja
+
+      - name: Install Ninja (Windows)
+        if: runner.os == 'Windows'
+        run: choco install ninja -y --no-progress
+
+      - name: MSVC environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
 
       - name: Cache Qt
         uses: actions/cache@v4
