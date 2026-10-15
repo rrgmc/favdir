@@ -1,7 +1,9 @@
 name: build
 
 on:
+  # Tags start release.yml, which builds and tests on its own.
   push:
+    branches: ['**']
   pull_request:
 
 jobs:
