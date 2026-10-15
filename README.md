@@ -114,5 +114,24 @@ generated from the drawing in `src/ui/Icons.cpp`; after changing it, rebuild the
 `cmake --build --preset windows --target make_icons`, then run
 `build/windows/bin/Release/make_icons resources`.
 
+### Windows setup
+
+With [NSIS](https://nsis.sourceforge.io/) installed, `cpack` builds `favdir-<version>-win64.exe`
+from a Release build:
+
+```sh
+cd build/windows
+cpack -C Release
+```
+
+The setup installs favdir with the Qt and Visual C++ runtime libraries it needs, adds a Start
+menu entry, and on its last page offers to start favdir when you sign in. favdir then starts
+hidden in the tray (`favdir --hidden`).
+
+### Releases
+
+Publishing a GitHub release tagged `vX.Y.Z` runs the release workflow. It builds and tests
+favdir with that version, then attaches the Windows setup to the release.
+
 To change the Qt version, edit the version at the top of both setup scripts and in
 `CMakePresets.json`.

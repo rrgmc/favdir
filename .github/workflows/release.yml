@@ -1,0 +1,67 @@
+name: release
+
+# Publishing a GitHub release tagged vX.Y.Z (or X.Y.Z) builds and tests favdir, then attaches
+# the Windows setup to the release.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  windows-setup:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Install Ninja and NSIS
+        run: choco install ninja nsis -y --no-progress
+
+      - name: MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Version from tag
+        id: version
+        shell: bash
+        run: |
+          tag="${{ github.event.release.tag_name }}"
+          version="${tag#v}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Release tag '$tag' is not vX.Y.Z or X.Y.Z"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Qt
+        uses: actions/cache@v4
+        with:
+          path: .qt
+          key: qt-${{ runner.os }}-${{ hashFiles('scripts/setup.*') }}
+
+      - name: Download Qt
+        run: pwsh -File scripts/setup.ps1
+
+      - name: Configure
+        run: cmake --preset windows-ninja -DFAVDIR_VERSION=${{ steps.version.outputs.version }}
+
+      - name: Build
+        run: cmake --build --preset windows-ninja
+
+      - name: Test
+        run: ctest --preset windows-ninja
+
+      - name: Build setup
+        working-directory: build/windows-ninja
+        run: cpack -C Release
+
+      - name: Attach setup to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" \
+            "build/windows-ninja/favdir-${{ steps.version.outputs.version }}-win64.exe" --clobber
