@@ -10,6 +10,7 @@
 #include <QInputDialog>
 #include <QKeyEvent>
 #include <QMenu>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QTableWidget>
 #include <QVBoxLayout>
@@ -101,6 +102,7 @@ protected:
 
 ActionTableEditor::ActionTableEditor(Mode mode, QWidget *parent)
     : QWidget(parent)
+    , m_mode(mode)
     , m_table(new ActionTable(0, ColumnCount, this))
 {
     m_table->setHorizontalHeaderLabels({tr("Name"), tr("Command"), tr("Shell"), tr("All folders")});
@@ -177,8 +179,20 @@ ActionTableEditor::ActionTableEditor(Mode mode, QWidget *parent)
     add->setMenu(addMenu);
     connect(remove, &QPushButton::clicked, this, [this] {
         const int row = m_table->currentRow();
-        if (row >= 0)
-            m_table->removeRow(row);
+        if (row < 0)
+            return;
+        // A library action may be in use on many folders, so ask first. Unnamed rows have
+        // nothing to lose.
+        const QTableWidgetItem *name = m_table->item(row, NameColumn);
+        const QString text = name ? name->text().trimmed() : QString();
+        if (m_mode == Mode::Library && !text.isEmpty()) {
+            const auto answer = QMessageBox::question(
+                this, tr("Remove action"),
+                tr("Remove \"%1\" from the action library? Every folder loses it.").arg(text));
+            if (answer != QMessageBox::Yes)
+                return;
+        }
+        m_table->removeRow(row);
     });
     connect(up, &QPushButton::clicked, this, [this] { moveCurrent(-1); });
     connect(down, &QPushButton::clicked, this, [this] { moveCurrent(1); });

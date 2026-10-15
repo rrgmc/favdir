@@ -9,7 +9,7 @@ class QTableWidget;
 
 // Editable table of actions (name, command, shell) with add, remove and reorder buttons. Add
 // offers templates for common commands. In library mode it also edits whether each action shows
-// on all folders.
+// on all folders, and asks before removing an action.
 class ActionTableEditor : public QWidget
 {
     Q_OBJECT
@@ -33,5 +33,6 @@ private:
     QString askCommand(const QString &title, const QString &label);
     void moveCurrent(int delta);
 
+    Mode m_mode;
     QTableWidget *m_table;
 };
