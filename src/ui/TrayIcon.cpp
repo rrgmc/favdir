@@ -35,3 +35,7 @@ void TrayIcon::showWarning(const QString &title, const QString &text)
 {
     d->tray->showMessage(title, text, QSystemTrayIcon::Warning);
 }
+
+void TrayIcon::setDockIconVisible(bool)
+{
+}
