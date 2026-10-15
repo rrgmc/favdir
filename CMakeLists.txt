@@ -82,3 +82,16 @@ foreach(test_name tst_folderstore tst_actionrunner tst_mainwindow)
         "QT_QPA_PLATFORM=offscreen"
         "QT_PLUGIN_PATH=${QT6_INSTALL_PREFIX}/${QT6_INSTALL_PLUGINS}")
 endforeach()
+
+# `cmake --install` produces a self-contained app: windeployqt or macdeployqt copy the Qt
+# libraries and plugins next to it.
+include(GNUInstallDirs)
+install(TARGETS favdir
+    BUNDLE DESTINATION .
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+qt_generate_deploy_app_script(
+    TARGET favdir
+    OUTPUT_SCRIPT deploy_script
+    NO_TRANSLATIONS
+    NO_UNSUPPORTED_PLATFORM_ERROR)
+install(SCRIPT ${deploy_script})

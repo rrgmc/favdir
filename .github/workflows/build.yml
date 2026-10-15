@@ -1,0 +1,55 @@
+name: build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            preset: windows
+            setup: pwsh -File scripts/setup.ps1
+          - os: macos-latest
+            preset: macos
+            setup: sh scripts/setup.sh
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Install Ninja
+        if: runner.os == 'macOS'
+        run: brew install ninja
+
+      - name: Cache Qt
+        uses: actions/cache@v4
+        with:
+          path: .qt
+          key: qt-${{ runner.os }}-${{ hashFiles('scripts/setup.*') }}
+
+      - name: Download Qt
+        run: ${{ matrix.setup }}
+
+      - name: Configure
+        run: cmake --preset ${{ matrix.preset }}
+
+      - name: Build
+        run: cmake --build --preset ${{ matrix.preset }}
+
+      - name: Test
+        run: ctest --preset ${{ matrix.preset }}
+
+      - name: Package
+        shell: bash
+        run: cmake --install build/${{ matrix.preset }} --config Release --prefix "$PWD/dist"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: favdir-${{ matrix.preset }}
+          path: dist
