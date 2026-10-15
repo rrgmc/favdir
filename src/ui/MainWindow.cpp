@@ -10,6 +10,7 @@
 #include "model/FolderStore.h"
 
 #include <QApplication>
+#include <QClipboard>
 #include <QCloseEvent>
 #include <QDir>
 #include <QFileDialog>
@@ -154,6 +155,12 @@ void MainWindow::createActions()
     edit->setShortcut(QKeySequence(Qt::Key_F2));
     QAction *remove = folder->addAction(tr("&Remove…"), this, &MainWindow::removeFolder);
     remove->setShortcuts({QKeySequence(QKeySequence::Delete), QKeySequence(Qt::CTRL | Qt::Key_Backspace)});
+    // The filter field keeps its own Copy: a focused line edit claims the shortcut first.
+    QAction *copy = folder->addAction(tr("&Copy path"), this, [this] {
+        if (const Folder *f = currentFolder())
+            copyPath(f->id);
+    });
+    copy->setShortcut(QKeySequence(QKeySequence::Copy));
     folder->addSeparator();
     const QList<std::pair<Priority, Qt::Key>> priorities = {
         {Priority::High, Qt::Key_1}, {Priority::Medium, Qt::Key_2}, {Priority::Low, Qt::Key_3}};
@@ -169,7 +176,7 @@ void MainWindow::createActions()
     down->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Down));
     m_toggleAction = folder->addAction(QString(), this, &MainWindow::toggleActive);
     m_toggleAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_I));
-    m_folderActions << edit << remove << up << down << m_toggleAction;
+    m_folderActions << edit << remove << copy << up << down << m_toggleAction;
 
     QMenu *tools = menuBar()->addMenu(tr("&Tools"));
     QAction *library = tools->addAction(tr("&Action library…"), this, &MainWindow::editActions);
@@ -509,6 +516,16 @@ void MainWindow::removeFolder()
     currentBoard()->selectId(next, true);
 }
 
+void MainWindow::copyPath(const QUuid &id)
+{
+    const Folder *f = m_store->folder(id);
+    if (!f)
+        return;
+    const QString path = QDir::toNativeSeparators(f->path);
+    QApplication::clipboard()->setText(path);
+    showMessage(tr("Copied %1").arg(path));
+}
+
 void MainWindow::moveToPriority(Priority priority)
 {
     const Folder *f = currentFolder();
@@ -588,6 +605,8 @@ void MainWindow::showContextMenu(const QUuid &id, const QPoint &globalPos)
     menu.addAction(f->active ? tr("Make &inactive") : tr("Make &active"), this,
                    &MainWindow::toggleActive);
     menu.addSeparator();
+    QAction *copy = menu.addAction(tr("&Copy path"), this, [this, id] { copyPath(id); });
+    copy->setShortcut(QKeySequence(QKeySequence::Copy));
     menu.addAction(tr("&Edit…"), this, &MainWindow::editFolder);
     menu.addAction(tr("&Remove…"), this, &MainWindow::removeFolder);
     menu.exec(globalPos);

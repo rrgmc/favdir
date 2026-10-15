@@ -5,6 +5,7 @@
 #include "ui/SectionView.h"
 
 #include <QApplication>
+#include <QClipboard>
 #include <QDragEnterEvent>
 #include <QLineEdit>
 #include <QMimeData>
@@ -191,6 +192,22 @@ private slots:
         m_window->statusBar()->clearMessage();
         key(Qt::Key_2);
         QCOMPARE(m_window->statusBar()->currentMessage(), QString());
+    }
+
+    void copyShortcutCopiesPath()
+    {
+        QClipboard *clipboard = QApplication::clipboard();
+        // In the filter, Copy copies the filter text, not a path.
+        QTest::keyClicks(m_filter, QStringLiteral("zz"));
+        m_filter->selectAll();
+        key(Qt::Key_C, Qt::ControlModifier);
+        QCOMPARE(clipboard->text(), QStringLiteral("zz"));
+        m_filter->clear();
+
+        key(Qt::Key_Down);
+        QCOMPARE(currentName(), QStringLiteral("a"));
+        key(Qt::Key_C, Qt::ControlModifier);
+        QCOMPARE(clipboard->text(), QDir::toNativeSeparators(m_dir.filePath(QStringLiteral("a"))));
     }
 
     void tabShortcutSwitches()

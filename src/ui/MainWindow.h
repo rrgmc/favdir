@@ -48,6 +48,7 @@ private:
     void addFolderPath(const QString &path);
     void editFolder();
     void removeFolder();
+    void copyPath(const QUuid &id);
     void moveToPriority(Priority priority);
     void moveBy(int delta);
     void toggleActive();
