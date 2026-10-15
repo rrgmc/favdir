@@ -12,5 +12,9 @@ QIcon appIcon();
 QIcon trayIcon();
 // The icon at one size; tools/make_icons uses it to write the .ico and .icns files.
 QImage render(int size, bool mono = false);
+// A toolbar and menu icon. Elsewhere this is QIcon::fromTheme. On macOS the icon is drawn in
+// code: Qt 6.8 draws theme icons from SF Symbols, and AppKit aborts the app while it does so on
+// macOS 27.
+QIcon toolIcon(QIcon::ThemeIcon icon);
 
 } // namespace Icons

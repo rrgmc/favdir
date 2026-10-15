@@ -8,8 +8,8 @@
 class FolderStore;
 class PriorityBoard;
 class QLineEdit;
-class QSystemTrayIcon;
 class QTabWidget;
+class TrayIcon;
 
 class MainWindow : public QMainWindow
 {
@@ -59,7 +59,7 @@ private:
     QLineEdit *m_filter;
     QTabWidget *m_tabs;
     PriorityBoard *m_boards[2];  // [0] active, [1] inactive
-    QSystemTrayIcon *m_tray = nullptr;
+    TrayIcon *m_tray = nullptr;
     QString m_hotkeyError;
     int m_trayAttempts = 0;
     QList<QAction *> m_folderActions;  // need a selected folder

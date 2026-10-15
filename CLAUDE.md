@@ -59,6 +59,10 @@ actions on them. `README.md` describes the features and the build for users.
   target. Regenerate it after visible changes to the main window.
 - `CMakeLists.txt` drops the AGL framework from Qt's OpenGL target on macOS (Xcode 26 no
   longer ships it). Remove the workaround when moving to a Qt version that no longer links AGL.
+- Qt 6.8 crashes on macOS 27 in two places, so favdir works around both on macOS. `TrayIcon`
+  uses a native `NSStatusItem` instead of `QSystemTrayIcon`, which aborts when clicked (fixed in
+  Qt 6.12). `Icons::toolIcon` draws the toolbar icons instead of using `QIcon::fromTheme`, whose
+  SF Symbols drawing aborts. Check both after upgrading Qt.
 
 ## Packaging and releases
 
