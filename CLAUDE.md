@@ -66,9 +66,17 @@ actions on them. `README.md` describes the features and the build for users.
 - `cpack -C Release` in a Windows build folder makes the NSIS setup. The NSIS snippets in
   `CMakeLists.txt` rely on `CPACK_VERBATIM_VARIABLES`; the finish page "start at sign-in" option
   is injected through `CPACK_NSIS_INSTALLER_MUI_ICON_CODE`.
+- `cpack -C Release` in a macOS build folder makes the DragNDrop disk image. The install step
+  signs the bundle after macdeployqt, which leaves it unsigned; Apple silicon does not start
+  unsigned code. `FAVDIR_CODESIGN_IDENTITY` picks the identity: `-` (ad hoc, the default) or a
+  Developer ID, which adds the hardened runtime and timestamp.
+- `scripts/release-macos.sh <version> [--upload]` makes the notarised disk image. Locally it uses
+  the keychain's Developer ID certificate and the `favdir` notarytool profile. The release
+  workflow runs it with a temporary keychain and an App Store Connect API key, from the secrets
+  of the `release` environment. That job holds secrets: keep its actions pinned to commits.
 - `.github/workflows/build.yml` builds and tests on every push. `release.yml` runs when a
   GitHub release tagged `vX.Y.Z` is published: it builds with that version
-  (`-DFAVDIR_VERSION`) and attaches the Windows setup.
+  (`-DFAVDIR_VERSION`) and attaches the Windows setup and the macOS disk image.
 
 ## Public repository
 

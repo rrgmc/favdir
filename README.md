@@ -151,10 +151,59 @@ The setup installs favdir with the Qt and Visual C++ runtime libraries it needs,
 menu entry, and on its last page offers to start favdir when you sign in. favdir then starts
 hidden in the tray (`favdir --hidden`).
 
+### macOS disk image
+
+`cpack` builds `favdir-<version>-macos.dmg` from a Release build:
+
+```sh
+cd build/macos
+cpack -C Release
+```
+
+The disk image holds `favdir.app`, with the Qt libraries it needs, and a link to the
+Applications folder. Drag the app onto the link to install it.
+
+This disk image is signed ad hoc, not with an Apple Developer ID, and it is not notarised. The
+first time you start a downloaded copy, macOS refuses to open it. Open System Settings > Privacy &
+Security and click **Open Anyway** next to the message about favdir.
+
+### Notarised macOS disk image
+
+`scripts/release-macos.sh` builds a disk image that macOS opens without a warning. It runs on a
+Mac with a "Developer ID Application" certificate in the keychain. It builds and tests favdir in
+`build/macos-release`, signs the app and the disk image with the certificate, has Apple notarise
+the disk image, and staples the notarisation ticket to it.
+
+Store your notarisation credentials once. The password is an app-specific password from
+[account.apple.com](https://account.apple.com):
+
+```sh
+xcrun notarytool store-credentials favdir --apple-id <Apple ID> --team-id <team ID>
+```
+
+Then build the disk image. `--upload` attaches it to the GitHub release `v<version>` and replaces
+the one there:
+
+```sh
+sh scripts/release-macos.sh 1.0.0 --upload
+```
+
 ### Releases
 
 Publishing a GitHub release tagged `vX.Y.Z` runs the release workflow. It builds and tests
-favdir with that version, then attaches the Windows setup to the release.
+favdir with that version, then attaches the Windows setup and the notarised macOS disk image to
+the release. The macOS job runs `scripts/release-macos.sh` with these secrets of the `release`
+environment:
+
+| Secret | Value |
+|---|---|
+| `MACOS_CERTIFICATE_P12` | The Developer ID Application certificate and its private key, exported as a `.p12` file, in base64 |
+| `MACOS_CERTIFICATE_PASSWORD` | The password of the `.p12` file |
+| `NOTARY_API_KEY` | The contents of an App Store Connect API key file (`AuthKey_<key ID>.p8`) |
+| `NOTARY_API_KEY_ID` | The key ID of that API key |
+| `NOTARY_API_ISSUER` | The issuer ID shown above the list of API keys in App Store Connect |
+
+The environment accepts only `v*` tags and `master`, so other branches cannot use the secrets.
 
 To change the Qt version, edit the version at the top of both setup scripts and in
 `CMakePresets.json`.
