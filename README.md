@@ -61,6 +61,10 @@ Every action has:
 - a **Shell** option, which runs the command through `cmd /c` (Windows) or `/bin/sh -c`
   (macOS). Use it for scripts, `.cmd` files, pipes or `&&`.
 
+On Windows, the default Terminal action opens Windows Terminal (`wt -d "{path}"`) when it is
+installed, and a classic `cmd` console otherwise. Windows Terminal ships with Windows 11 and is
+a Microsoft Store app on Windows 10.
+
 ### Example actions
 
 | Name | Windows command | macOS command | Shell |

@@ -1,6 +1,7 @@
 #include "DefaultActions.h"
 
 #include <QCoreApplication>
+#include <QStandardPaths>
 
 namespace DefaultActions {
 
@@ -17,7 +18,9 @@ QList<Action> create()
 #if defined(Q_OS_WIN)
     return {
         make("Explorer", QString::fromLatin1(Action::OpenCommand)),
-        make("Terminal", QStringLiteral(R"(wt -d "{path}")")),
+        make("Terminal", hasWindowsTerminal() ? QStringLiteral(R"(wt -d "{path}")")
+                                              // Started in the folder, in a new console.
+                                              : QStringLiteral("cmd")),
     };
 #elif defined(Q_OS_MACOS)
     return {
@@ -28,6 +31,15 @@ QList<Action> create()
     return {
         make("Files", QString::fromLatin1(Action::OpenCommand)),
     };
+#endif
+}
+
+bool hasWindowsTerminal()
+{
+#if defined(Q_OS_WIN)
+    return !QStandardPaths::findExecutable(QStringLiteral("wt")).isEmpty();
+#else
+    return false;
 #endif
 }
 

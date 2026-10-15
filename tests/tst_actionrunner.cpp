@@ -80,6 +80,19 @@ private slots:
         QVERIFY(!error.isEmpty());
     }
 
+    void defaultTerminalMatchesWindowsTerminal()
+    {
+#ifdef Q_OS_WIN
+        qInfo("Windows Terminal found: %s", DefaultActions::hasWindowsTerminal() ? "yes" : "no");
+        const QList<Action> actions = DefaultActions::create();
+        QCOMPARE(actions.at(1).name, QStringLiteral("Terminal"));
+        QCOMPARE(actions.at(1).command.startsWith(QLatin1String("wt ")),
+                 DefaultActions::hasWindowsTerminal());
+#else
+        QSKIP("Windows only");
+#endif
+    }
+
     void defaultActionsParse()
     {
         Folder f;
