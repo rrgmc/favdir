@@ -18,6 +18,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QPointer>
 #include <QSettings>
 #include <QStatusBar>
 #include <QSystemTrayIcon>
@@ -35,6 +36,7 @@
 
 namespace {
 constexpr int MessageTimeoutMs = 5000;
+constexpr int ErrorTimeoutMs = 15000;
 constexpr int TrayAttempts = 30;
 constexpr int TrayRetryMs = 2000;
 
@@ -359,7 +361,7 @@ void MainWindow::setHotkeyError(const QString &error)
 
 void MainWindow::showMessage(const QString &text, bool error)
 {
-    statusBar()->showMessage(text, MessageTimeoutMs);
+    statusBar()->showMessage(text, error ? ErrorTimeoutMs : MessageTimeoutMs);
     if (error && m_tray && !isVisible())
         m_tray->showMessage(QStringLiteral("favdir"), text, QSystemTrayIcon::Warning);
 }
@@ -427,7 +429,11 @@ void MainWindow::runAction(const QUuid &folderId, int actionIndex)
         return;
     const Action &action = actions.at(actionIndex);
     QString error;
-    if (ActionRunner::run(action, *f, &error))
+    const auto onFailure = [window = QPointer<MainWindow>(this)](const QString &message) {
+        if (window)
+            window->showMessage(message, true);
+    };
+    if (ActionRunner::run(action, *f, &error, onFailure))
         showMessage(tr("%1: %2").arg(action.name, f->name));
     else
         showMessage(error, true);

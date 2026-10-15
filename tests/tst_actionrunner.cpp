@@ -2,6 +2,7 @@
 #include "actions/DefaultActions.h"
 
 #include <QDir>
+#include <QTemporaryDir>
 #include <QTest>
 
 class TestActionRunner : public QObject
@@ -78,6 +79,40 @@ private slots:
         QString error;
         QVERIFY(!ActionRunner::run(DefaultActions::create().first(), f, &error));
         QVERIFY(!error.isEmpty());
+    }
+
+    void runReportsFailedShellCommand()
+    {
+        QTemporaryDir dir;
+        Folder f;
+        f.path = dir.path();
+#ifdef Q_OS_WIN
+        const QString command = QStringLiteral("echo favdir-oops 1>&2 & exit /b 3");
+#else
+        const QString command = QStringLiteral("echo favdir-oops >&2; exit 3");
+#endif
+        const Action a{QUuid::createUuid(), QStringLiteral("Broken"), command, true};
+        QString failure;
+        QString error;
+        QVERIFY2(ActionRunner::run(a, f, &error, [&](const QString &m) { failure = m; }),
+                 qPrintable(error));
+        QTRY_VERIFY(!failure.isEmpty());
+        QVERIFY2(failure.contains(QLatin1String("\"Broken\"")), qPrintable(failure));
+        QVERIFY2(failure.contains(QLatin1String("3")), qPrintable(failure));
+        QVERIFY2(failure.contains(QLatin1String("favdir-oops")), qPrintable(failure));
+    }
+
+    void runIsQuietForSucceedingShellCommand()
+    {
+        QTemporaryDir dir;
+        Folder f;
+        f.path = dir.path();
+        const Action a{QUuid::createUuid(), QStringLiteral("Fine"), QStringLiteral("exit 0"),
+                       true};
+        bool failed = false;
+        QVERIFY(ActionRunner::run(a, f, nullptr, [&](const QString &) { failed = true; }));
+        QTest::qWait(1000);
+        QVERIFY(!failed);
     }
 
     void defaultTerminalMatchesWindowsTerminal()
