@@ -23,10 +23,14 @@
 #include <QSystemTrayIcon>
 #include <QTabWidget>
 #include <QTimer>
+#include <QToolBar>
+#include <QToolButton>
 #include <QVBoxLayout>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
+// windows.h maps this to DocumentPropertiesW, which clashes with QIcon::ThemeIcon.
+#undef DocumentProperties
 #endif
 
 namespace {
@@ -69,6 +73,7 @@ MainWindow::MainWindow(FolderStore *store, QWidget *parent)
         connect(b, &PriorityBoard::runAction, this, &MainWindow::runAction);
         connect(b, &PriorityBoard::folderContextMenu, this, &MainWindow::showContextMenu);
         connect(b, &PriorityBoard::countsChanged, this, &MainWindow::updateTabTitles);
+        connect(b, &PriorityBoard::currentChanged, this, &MainWindow::updateFolderActions);
         connect(b, &PriorityBoard::typed, this, [this](const QString &text) {
             m_filter->setFocus(Qt::ShortcutFocusReason);
             m_filter->setText(m_filter->text() + text);
@@ -81,7 +86,9 @@ MainWindow::MainWindow(FolderStore *store, QWidget *parent)
     connect(m_tabs, &QTabWidget::currentChanged, this, [this] {
         if (!m_filter->hasFocus())
             currentBoard()->focusFirst();
+        updateFolderActions();
     });
+    connect(m_store, &FolderStore::changed, this, &MainWindow::updateFolderActions);
     connect(m_store, &FolderStore::saveFailed, this, [this](const QString &error) {
         showMessage(tr("Could not save %1: %2")
                         .arg(QDir::toNativeSeparators(m_store->filePath()), error),
@@ -99,6 +106,7 @@ MainWindow::MainWindow(FolderStore *store, QWidget *parent)
     createActions();
     createTray();
     updateTabTitles();
+    updateFolderActions();
     setAcceptDrops(false);
 
     QSettings settings;
@@ -139,20 +147,67 @@ void MainWindow::createActions()
         QAction *move = folder->addAction(tr("Move to %1").arg(priorityLabel(priority)), this,
                                           [this, p = priority] { moveToPriority(p); });
         move->setShortcut(QKeySequence(Qt::CTRL | key));
+        m_folderActions.append(move);
     }
     QAction *up = folder->addAction(tr("Move &up"), this, [this] { moveBy(-1); });
     up->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Up));
     QAction *down = folder->addAction(tr("Move &down"), this, [this] { moveBy(1); });
     down->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Down));
-    QAction *toggle = folder->addAction(tr("Toggle active / &inactive"), this,
-                                        &MainWindow::toggleActive);
-    toggle->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_I));
+    m_toggleAction = folder->addAction(QString(), this, &MainWindow::toggleActive);
+    m_toggleAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_I));
+    m_folderActions << edit << remove << up << down << m_toggleAction;
 
     QMenu *tools = menuBar()->addMenu(tr("&Tools"));
-    tools->addAction(tr("Global &actions…"), this, &MainWindow::editActions);
+    QAction *library = tools->addAction(tr("&Action library…"), this, &MainWindow::editActions);
     QAction *settings = tools->addAction(tr("&Settings…"), this, &MainWindow::editSettings);
     settings->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma));
     settings->setMenuRole(QAction::PreferencesRole);
+
+    add->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::FolderNew));
+    edit->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::DocumentProperties));
+    remove->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::ListRemove));
+    m_toggleAction->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::SyncSynchronizing));
+    library->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::FormatJustifyLeft));
+    settings->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::DocumentPageSetup));
+
+    // The toolbar repeats the most used commands. Its labels are shorter than the menu items.
+    QToolBar *toolbar = addToolBar(tr("Toolbar"));
+    toolbar->setObjectName(QStringLiteral("toolbar"));
+    toolbar->setMovable(false);
+    toolbar->setFloatable(false);
+    toolbar->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    toolbar->setIconSize(QSize(16, 16));
+    toolbar->setContextMenuPolicy(Qt::PreventContextMenu);
+    const auto addButton = [toolbar](QAction *action, const QString &label) {
+        // Icon-only buttons take their tooltip from the icon text.
+        if (!label.isEmpty())
+            action->setIconText(label);
+        toolbar->addAction(action);
+        if (QWidget *button = toolbar->widgetForAction(action))
+            button->setFocusPolicy(Qt::NoFocus);
+    };
+    addButton(add, tr("Add folder"));
+    addButton(edit, tr("Edit"));
+    addButton(remove, tr("Remove"));
+    addButton(m_toggleAction, QString());
+    toolbar->addSeparator();
+    addButton(library, tr("Action library"));
+    addButton(settings, tr("Settings"));
+
+    // Tooltips name the command and its shortcut.
+    for (QAction *action : toolbar->actions()) {
+        if (action->isSeparator())
+            continue;
+        const auto updateTip = [action] {
+            const QString keys = action->shortcut().toString(QKeySequence::NativeText);
+            const QString tip = keys.isEmpty() ? action->iconText()
+                                               : QStringLiteral("%1 (%2)").arg(action->iconText(), keys);
+            if (action->toolTip() != tip)
+                action->setToolTip(tip);
+        };
+        connect(action, &QAction::changed, this, updateTip);
+        updateTip();
+    }
 
     // Not in a menu: tab switching.
     auto *nextTab = new QAction(this);
@@ -207,7 +262,20 @@ PriorityBoard *MainWindow::board(bool active) const
 
 const Folder *MainWindow::currentFolder() const
 {
-    return m_store->folder(currentBoard()->currentId());
+    // The board can still remember a folder that has since moved to the other tab.
+    const Folder *f = m_store->folder(currentBoard()->currentId());
+    return f && f->active == currentBoard()->isActiveBoard() ? f : nullptr;
+}
+
+void MainWindow::updateFolderActions()
+{
+    const bool hasFolder = currentFolder() != nullptr;
+    for (QAction *action : std::as_const(m_folderActions))
+        action->setEnabled(hasFolder);
+
+    const bool onActive = currentBoard()->isActiveBoard();
+    m_toggleAction->setText(onActive ? tr("Make &inactive") : tr("Make &active"));
+    m_toggleAction->setIconText(onActive ? tr("Make inactive") : tr("Make active"));
 }
 
 void MainWindow::updateTabTitles()

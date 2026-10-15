@@ -139,6 +139,7 @@ void PriorityBoard::setCurrent(SectionView *view, const QUuid &id)
             other->clearCurrent();
     }
     ensureCurrentVisible();
+    emit currentChanged();
 }
 
 void PriorityBoard::restoreSelection()

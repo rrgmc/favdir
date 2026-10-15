@@ -40,6 +40,7 @@ signals:
     void typed(const QString &text);
     void folderContextMenu(const QUuid &id, const QPoint &globalPos);
     void countsChanged();
+    void currentChanged();
 
 private:
     void setCurrent(SectionView *view, const QUuid &id);

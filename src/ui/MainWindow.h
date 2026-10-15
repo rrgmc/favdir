@@ -36,6 +36,9 @@ private:
     PriorityBoard *board(bool active) const;
     const Folder *currentFolder() const;
     void updateTabTitles();
+    // Enables the folder commands only when a folder is selected, and names the
+    // active/inactive toggle after the current tab.
+    void updateFolderActions();
     void hideWindow();
     void saveGeometryState();
 
@@ -58,4 +61,6 @@ private:
     QSystemTrayIcon *m_tray = nullptr;
     QString m_hotkeyError;
     int m_trayAttempts = 0;
+    QList<QAction *> m_folderActions;  // need a selected folder
+    QAction *m_toggleAction = nullptr;
 };
