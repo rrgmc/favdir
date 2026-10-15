@@ -63,6 +63,10 @@ Every action has:
 - a **Shell** option, which runs the command through `cmd /c` (Windows) or `/bin/sh -c`
   (macOS). Use it for scripts, `.cmd` files, pipes or `&&`.
 
+When an action fails, the status bar shows why. A command that cannot start reports this at
+once. A **Shell** command reports its exit code and error output when it exits with an error.
+If the window is hidden, the message appears as a tray notification.
+
 On Windows, the default Terminal action opens Windows Terminal (`wt -d "{path}"`) when it is
 installed, and a classic `cmd` console otherwise. Windows Terminal ships with Windows 11 and is
 a Microsoft Store app on Windows 10.
