@@ -10,6 +10,9 @@
 
 namespace {
 constexpr int EmptyHeight = 44;
+#ifdef Q_OS_MACOS
+constexpr qreal CardRadius = 8;
+#endif
 }
 
 SectionView::SectionView(SectionModel *model, QWidget *parent)
@@ -30,6 +33,11 @@ SectionView::SectionView(SectionModel *model, QWidget *parent)
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     setEditTriggers(QAbstractItemView::NoEditTriggers);
+#ifdef Q_OS_MACOS
+    // A rounded card instead of the square list frame, as in macOS's grouped lists.
+    setFrameShape(QFrame::NoFrame);
+    viewport()->setAutoFillBackground(false);
+#endif
 
     connect(model, &QAbstractItemModel::modelReset, this, &QWidget::updateGeometry);
     connect(model, &SectionModel::foldersDropped, this, [this](const QList<QUuid> &ids) {
@@ -205,6 +213,23 @@ void SectionView::focusInEvent(QFocusEvent *event)
 
 void SectionView::paintEvent(QPaintEvent *event)
 {
+#ifdef Q_OS_MACOS
+    {
+        QPainter painter(viewport());
+        painter.setRenderHint(QPainter::Antialiasing);
+        const QPalette::ColorGroup group = isActiveWindow() ? QPalette::Active : QPalette::Inactive;
+        // A slight tint of the text colour, like a group box: darker than the pane in light
+        // mode and lighter in dark mode.
+        QColor fill = palette().color(group, QPalette::Text);
+        QColor border = fill;
+        fill.setAlphaF(0.04);
+        border.setAlphaF(0.12);
+        painter.setPen(QPen(border, 1));
+        painter.setBrush(fill);
+        painter.drawRoundedRect(QRectF(viewport()->rect()).adjusted(0.5, 0.5, -0.5, -0.5),
+                                CardRadius, CardRadius);
+    }
+#endif
     QListView::paintEvent(event);
     if (m_model->rowCount() > 0)
         return;
