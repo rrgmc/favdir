@@ -42,9 +42,13 @@ QList<Action> create()
 
 QString defaultHotkey()
 {
-    // Qt's Meta is the Windows key on Windows (Win+Alt+F) and the Control key on macOS
-    // (Control+Option+F; Command+Option+Space is taken by Finder search).
+#if defined(Q_OS_MACOS)
+    // Qt's Meta is the Control key on macOS: Control+Option+F. macOS 15 refuses hotkeys that
+    // use only Option and Shift, and Command+Option+Space is taken by Finder search.
     return QStringLiteral("Meta+Alt+F");
+#else
+    return QStringLiteral("Alt+Shift+F");
+#endif
 }
 
 } // namespace DefaultActions
