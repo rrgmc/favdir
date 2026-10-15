@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 
 # Release builds pass the tag's version, for example -DFAVDIR_VERSION=1.2.0.
-set(FAVDIR_VERSION "0.1.0" CACHE STRING "favdir version (major.minor.patch)")
+set(FAVDIR_VERSION "1.0.0" CACHE STRING "favdir version (major.minor.patch)")
 project(favdir VERSION ${FAVDIR_VERSION} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
