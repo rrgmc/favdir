@@ -40,11 +40,13 @@ QPainterPath starPath(qreal s)
     return path;
 }
 
-QPixmap render(int size, bool mono)
+} // namespace
+
+QImage render(int size, bool mono)
 {
-    QPixmap pixmap(size, size);
-    pixmap.fill(Qt::transparent);
-    QPainter painter(&pixmap);
+    QImage image(size, size, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setPen(Qt::NoPen);
     if (mono) {
@@ -55,14 +57,17 @@ QPixmap render(int size, bool mono)
         painter.fillPath(folderPath(size), QColor(0xE8, 0xA3, 0x3D));
         painter.fillPath(starPath(size), QColor(0xFF, 0xF6, 0xD8));
     }
-    return pixmap;
+    painter.end();
+    return image;
 }
+
+namespace {
 
 QIcon build(bool mono)
 {
     QIcon icon;
     for (int size : {16, 22, 32, 44, 64, 128, 256})
-        icon.addPixmap(render(size, mono));
+        icon.addPixmap(QPixmap::fromImage(render(size, mono)));
     return icon;
 }
 } // namespace

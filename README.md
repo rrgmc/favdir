@@ -109,5 +109,10 @@ testing.
    cmake --install build/windows --config Release --prefix "$PWD/dist"
    ```
 
+The executable icon comes from `resources/favdir.ico` and `resources/favdir.icns`. Both are
+generated from the drawing in `src/ui/Icons.cpp`; after changing it, rebuild them with
+`cmake --build --preset windows --target make_icons`, then run
+`build/windows/bin/Release/make_icons resources`.
+
 To change the Qt version, edit the version at the top of both setup scripts and in
 `CMakePresets.json`.

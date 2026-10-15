@@ -41,10 +41,15 @@ qt_add_executable(favdir WIN32 MACOSX_BUNDLE
     src/platform/SingleInstance.h src/platform/SingleInstance.cpp
 )
 
+# The executable icon. Regenerate the files with the make_icons target after changing the
+# drawing in src/ui/Icons.cpp.
 if(WIN32)
-    target_sources(favdir PRIVATE src/platform/GlobalHotkey_win.cpp)
+    target_sources(favdir PRIVATE src/platform/GlobalHotkey_win.cpp resources/favdir.rc)
 elseif(APPLE)
-    target_sources(favdir PRIVATE src/platform/GlobalHotkey_mac.cpp)
+    target_sources(favdir PRIVATE src/platform/GlobalHotkey_mac.cpp resources/favdir.icns)
+    set_source_files_properties(resources/favdir.icns PROPERTIES
+        MACOSX_PACKAGE_LOCATION Resources)
+    set_target_properties(favdir PROPERTIES MACOSX_BUNDLE_ICON_FILE favdir.icns)
     target_link_libraries(favdir PRIVATE "-framework Carbon")
 else()
     target_sources(favdir PRIVATE src/platform/GlobalHotkey_none.cpp)
@@ -58,6 +63,9 @@ set_target_properties(favdir PROPERTIES
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION}
 )
+
+qt_add_executable(make_icons EXCLUDE_FROM_ALL tools/make_icons.cpp)
+target_link_libraries(make_icons PRIVATE favdir_ui)
 
 # Copy the Qt runtime next to the executable so it runs from the build tree.
 if(WIN32)
