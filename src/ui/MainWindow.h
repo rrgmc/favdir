@@ -39,6 +39,7 @@ private:
     // Enables the folder commands only when a folder is selected, and names the
     // active/inactive toggle after the current tab.
     void updateFolderActions();
+    void showAbout();
     void hideWindow();
     void saveGeometryState();
 

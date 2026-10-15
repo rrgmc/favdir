@@ -163,6 +163,12 @@ void MainWindow::createActions()
     settings->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma));
     settings->setMenuRole(QAction::PreferencesRole);
 
+    QMenu *help = menuBar()->addMenu(tr("&Help"));
+    QAction *about = help->addAction(tr("&About favdir"), this, &MainWindow::showAbout);
+    about->setMenuRole(QAction::AboutRole);
+    QAction *aboutQt = help->addAction(tr("About &Qt"), qApp, &QApplication::aboutQt);
+    aboutQt->setMenuRole(QAction::AboutQtRole);
+
     add->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::FolderNew));
     edit->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::DocumentProperties));
     remove->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::ListRemove));
@@ -265,6 +271,24 @@ const Folder *MainWindow::currentFolder() const
     // The board can still remember a folder that has since moved to the other tab.
     const Folder *f = m_store->folder(currentBoard()->currentId());
     return f && f->active == currentBoard()->isActiveBoard() ? f : nullptr;
+}
+
+void MainWindow::showAbout()
+{
+    const QString version = QApplication::applicationVersion();
+    QMessageBox box(this);
+    box.setWindowTitle(tr("About favdir"));
+    box.setIconPixmap(Icons::appIcon().pixmap(64, 64));
+    box.setTextFormat(Qt::RichText);
+    box.setText(QStringLiteral("<h3>favdir %1</h3>").arg(version.toHtmlEscaped()));
+    box.setInformativeText(
+        tr("Favourite folders with one-click actions.") + QStringLiteral("<br><br>")
+        + QStringLiteral("Rangel Reale &lt;<a href=\"mailto:%1\">%1</a>&gt;<br>"
+                         "<a href=\"%2\">%2</a>")
+              .arg(QStringLiteral("realerangel@gmail.com"),
+                   QStringLiteral("https://github.com/rrgmc/favdir")));
+    box.setStandardButtons(QMessageBox::Ok);
+    box.exec();
 }
 
 void MainWindow::updateFolderActions()
