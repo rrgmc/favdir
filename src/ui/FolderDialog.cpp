@@ -17,6 +17,8 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
+#include <algorithm>
+
 namespace {
 constexpr int IdRole = Qt::UserRole + 1;
 }
@@ -28,7 +30,7 @@ FolderDialog::FolderDialog(const FolderStore *store, const Folder &folder, QWidg
     , m_name(new QLineEdit(folder.name, this))
     , m_path(new QLineEdit(QDir::toNativeSeparators(folder.path), this))
     , m_globalActions(new QListWidget(this))
-    , m_customActions(new ActionTableEditor(this))
+    , m_customActions(new ActionTableEditor(ActionTableEditor::Mode::Folder, this))
 {
     setWindowTitle(tr("Edit folder"));
     resize(640, 520);
@@ -52,14 +54,15 @@ FolderDialog::FolderDialog(const FolderStore *store, const Folder &folder, QWidg
     form->addRow(tr("&Path:"), pathRow);
 
     for (const Action &a : store->actions()) {
-        auto *item = new QListWidgetItem(a.name, m_globalActions);
+        const QString label = a.allFolders ? a.name : tr("%1 (optional)").arg(a.name);
+        auto *item = new QListWidgetItem(label, m_globalActions);
         item->setData(IdRole, a.id);
         item->setToolTip(a.command);
         item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-        item->setCheckState(folder.disabledActions.contains(a.id) ? Qt::Unchecked : Qt::Checked);
+        item->setCheckState(FolderStore::isShown(a, folder) ? Qt::Checked : Qt::Unchecked);
     }
-    m_globalActions->setMaximumHeight(120);
-    auto *globalBox = new QGroupBox(tr("&Global actions shown for this folder"), this);
+    m_globalActions->setMaximumHeight(140);
+    auto *globalBox = new QGroupBox(tr("&Library actions shown on this folder"), this);
     auto *globalLayout = new QVBoxLayout(globalBox);
     globalLayout->addWidget(m_globalActions);
 
@@ -88,10 +91,20 @@ Folder FolderDialog::folder() const
     f.name = m_name->text().trimmed();
     f.path = QDir::cleanPath(QDir::fromNativeSeparators(m_path->text().trimmed()));
     f.disabledActions.clear();
+    f.addedActions.clear();
     for (int i = 0; i < m_globalActions->count(); ++i) {
         const QListWidgetItem *item = m_globalActions->item(i);
-        if (item->checkState() != Qt::Checked)
-            f.disabledActions.append(item->data(IdRole).toUuid());
+        const QUuid id = item->data(IdRole).toUuid();
+        const bool checked = item->checkState() == Qt::Checked;
+        const auto &library = m_store->actions();
+        const auto action = std::find_if(library.cbegin(), library.cend(),
+                                         [&id](const Action &a) { return a.id == id; });
+        if (action == library.cend())
+            continue;
+        if (action->allFolders && !checked)
+            f.disabledActions.append(id);
+        else if (!action->allFolders && checked)
+            f.addedActions.append(id);
     }
     f.customActions = m_customActions->actions();
     return f;

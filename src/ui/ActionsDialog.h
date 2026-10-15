@@ -6,7 +6,7 @@
 
 class ActionTableEditor;
 
-// Edits the global actions shown on every folder.
+// Edits the action library: actions shared by all folders, or optional per folder.
 class ActionsDialog : public QDialog
 {
     Q_OBJECT

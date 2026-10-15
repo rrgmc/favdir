@@ -32,11 +32,29 @@ Priority priorityFromKey(const QString &key)
     return Priority::High;
 }
 
+namespace {
+QJsonArray idsToJson(const QList<QUuid> &ids)
+{
+    QJsonArray array;
+    for (const QUuid &id : ids)
+        array.append(id.toString(QUuid::WithoutBraces));
+    return array;
+}
+
+QList<QUuid> idsFromJson(const QJsonValue &value)
+{
+    QList<QUuid> ids;
+    for (const QJsonValue &v : value.toArray()) {
+        const QUuid id = QUuid::fromString(v.toString());
+        if (!id.isNull())
+            ids.append(id);
+    }
+    return ids;
+}
+} // namespace
+
 QJsonObject Folder::toJson() const
 {
-    QJsonArray disabled;
-    for (const QUuid &id : disabledActions)
-        disabled.append(id.toString(QUuid::WithoutBraces));
 
     QJsonObject obj{
         {QStringLiteral("id"), id.toString(QUuid::WithoutBraces)},
@@ -45,8 +63,10 @@ QJsonObject Folder::toJson() const
         {QStringLiteral("active"), active},
         {QStringLiteral("priority"), priorityKey(priority)},
     };
-    if (!disabled.isEmpty())
-        obj.insert(QStringLiteral("disabledActions"), disabled);
+    if (!disabledActions.isEmpty())
+        obj.insert(QStringLiteral("disabledActions"), idsToJson(disabledActions));
+    if (!addedActions.isEmpty())
+        obj.insert(QStringLiteral("addedActions"), idsToJson(addedActions));
     if (!customActions.isEmpty())
         obj.insert(QStringLiteral("customActions"), actionsToJson(customActions));
     return obj;
@@ -62,11 +82,8 @@ Folder Folder::fromJson(const QJsonObject &obj)
     f.path = obj.value(QStringLiteral("path")).toString();
     f.active = obj.value(QStringLiteral("active")).toBool(true);
     f.priority = priorityFromKey(obj.value(QStringLiteral("priority")).toString());
-    for (const QJsonValue &v : obj.value(QStringLiteral("disabledActions")).toArray()) {
-        const QUuid id = QUuid::fromString(v.toString());
-        if (!id.isNull())
-            f.disabledActions.append(id);
-    }
+    f.disabledActions = idsFromJson(obj.value(QStringLiteral("disabledActions")));
+    f.addedActions = idsFromJson(obj.value(QStringLiteral("addedActions")));
     f.customActions = actionsFromJson(obj.value(QStringLiteral("customActions")).toArray());
     return f;
 }

@@ -55,9 +55,14 @@ public:
     void toggleActive(const QUuid &id);
     void moveBy(const QUuid &id, int delta);  // reorders within the current section
 
+    // The action library.
     const QList<Action> &actions() const { return m_actions; }
     void setActions(const QList<Action> &actions);
-    // Enabled global actions followed by the folder's custom actions.
+    // Whether a library action shows on the folder.
+    static bool isShown(const Action &libraryAction, const Folder &folder);
+    // Shows or hides a library action on a folder.
+    void setActionShown(const QUuid &folderId, const QUuid &actionId, bool shown);
+    // The library actions shown on the folder, followed by the folder's own actions.
     QList<Action> actionsFor(const Folder &folder) const;
 
     const Settings &settings() const { return m_settings; }

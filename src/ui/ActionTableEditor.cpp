@@ -7,18 +7,24 @@
 #include <QVBoxLayout>
 
 namespace {
-enum Column { NameColumn, CommandColumn, ShellColumn, ColumnCount };
+enum Column { NameColumn, CommandColumn, ShellColumn, AllFoldersColumn, ColumnCount };
 constexpr int IdRole = Qt::UserRole + 1;
 } // namespace
 
-ActionTableEditor::ActionTableEditor(QWidget *parent)
+ActionTableEditor::ActionTableEditor(Mode mode, QWidget *parent)
     : QWidget(parent)
     , m_table(new QTableWidget(0, ColumnCount, this))
 {
-    m_table->setHorizontalHeaderLabels({tr("Name"), tr("Command"), tr("Shell")});
+    m_table->setHorizontalHeaderLabels({tr("Name"), tr("Command"), tr("Shell"), tr("All folders")});
+    m_table->horizontalHeaderItem(AllFoldersColumn)
+        ->setToolTip(tr("Show on every folder. When off, the action is optional and is added "
+                        "to folders one by one."));
+    m_table->setColumnHidden(AllFoldersColumn, mode != Mode::Library);
     m_table->horizontalHeader()->setSectionResizeMode(NameColumn, QHeaderView::Interactive);
     m_table->horizontalHeader()->setSectionResizeMode(CommandColumn, QHeaderView::Stretch);
     m_table->horizontalHeader()->setSectionResizeMode(ShellColumn, QHeaderView::ResizeToContents);
+    m_table->horizontalHeader()->setSectionResizeMode(AllFoldersColumn,
+                                                      QHeaderView::ResizeToContents);
     m_table->setColumnWidth(NameColumn, 140);
     m_table->verticalHeader()->setVisible(false);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -32,7 +38,7 @@ ActionTableEditor::ActionTableEditor(QWidget *parent)
     auto *down = new QPushButton(tr("Move do&wn"), this);
 
     connect(add, &QPushButton::clicked, this, [this] {
-        appendRow(Action{QUuid::createUuid(), QString(), QString(), false});
+        appendRow(Action{QUuid::createUuid(), QString(), QString(), false, true});
         const int row = m_table->rowCount() - 1;
         m_table->setCurrentCell(row, NameColumn);
         m_table->editItem(m_table->item(row, NameColumn));
@@ -83,6 +89,7 @@ QList<Action> ActionTableEditor::actions() const
         a.name = m_table->item(row, NameColumn)->text().trimmed();
         a.command = m_table->item(row, CommandColumn)->text().trimmed();
         a.shell = m_table->item(row, ShellColumn)->checkState() == Qt::Checked;
+        a.allFolders = m_table->item(row, AllFoldersColumn)->checkState() == Qt::Checked;
         if (a.id.isNull())
             a.id = QUuid::createUuid();
         if (!a.name.isEmpty() && !a.command.isEmpty())
@@ -99,13 +106,17 @@ void ActionTableEditor::appendRow(const Action &action)
     auto *name = new QTableWidgetItem(action.name);
     name->setData(IdRole, action.id);
     auto *command = new QTableWidgetItem(action.command);
-    auto *shell = new QTableWidgetItem;
-    shell->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable);
-    shell->setCheckState(action.shell ? Qt::Checked : Qt::Unchecked);
+    const auto checkItem = [](bool checked) {
+        auto *item = new QTableWidgetItem;
+        item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable);
+        item->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
+        return item;
+    };
 
     m_table->setItem(row, NameColumn, name);
     m_table->setItem(row, CommandColumn, command);
-    m_table->setItem(row, ShellColumn, shell);
+    m_table->setItem(row, ShellColumn, checkItem(action.shell));
+    m_table->setItem(row, AllFoldersColumn, checkItem(action.allFolders));
 }
 
 void ActionTableEditor::moveCurrent(int delta)

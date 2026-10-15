@@ -255,11 +255,36 @@ void FolderStore::setActions(const QList<Action> &actions)
     touch();
 }
 
+bool FolderStore::isShown(const Action &libraryAction, const Folder &folder)
+{
+    return libraryAction.allFolders ? !folder.disabledActions.contains(libraryAction.id)
+                                    : folder.addedActions.contains(libraryAction.id);
+}
+
+void FolderStore::setActionShown(const QUuid &folderId, const QUuid &actionId, bool shown)
+{
+    const int row = rowOf(folderId);
+    const auto action = std::find_if(m_actions.cbegin(), m_actions.cend(),
+                                     [&actionId](const Action &a) { return a.id == actionId; });
+    if (row < 0 || action == m_actions.cend())
+        return;
+    Folder &f = m_folders[row];
+    if (isShown(*action, f) == shown)
+        return;
+    // All-folders actions are tracked by exclusion, optional ones by inclusion.
+    QList<QUuid> &list = action->allFolders ? f.disabledActions : f.addedActions;
+    if (shown == action->allFolders)
+        list.removeAll(actionId);
+    else
+        list.append(actionId);
+    touch();
+}
+
 QList<Action> FolderStore::actionsFor(const Folder &folder) const
 {
     QList<Action> result;
     for (const Action &a : m_actions) {
-        if (!folder.disabledActions.contains(a.id))
+        if (isShown(a, folder))
             result.append(a);
     }
     result.append(folder.customActions);

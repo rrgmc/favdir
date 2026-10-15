@@ -23,9 +23,11 @@ struct Folder
     QString path;
     bool active = true;
     Priority priority = Priority::High;
-    // Global actions hidden for this folder. Stored as an exclusion list so that a global action
-    // added later shows up on every existing folder.
+    // Library actions marked "all folders" that this folder hides. An exclusion list, so that
+    // such an action added later shows up on every existing folder.
     QList<QUuid> disabledActions;
+    // Optional library actions (not "all folders") that this folder shows.
+    QList<QUuid> addedActions;
     QList<Action> customActions;
 
     bool inSection(bool isActive, Priority p) const { return active == isActive && priority == p; }

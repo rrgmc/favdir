@@ -194,6 +194,57 @@ private slots:
         QCOMPARE(actions.last().name, QStringLiteral("Custom"));
     }
 
+    void optionalLibraryActions()
+    {
+        const Action shared{QUuid::createUuid(), QStringLiteral("Shared"), QStringLiteral("x"),
+                            false, true};
+        const Action optional{QUuid::createUuid(), QStringLiteral("Optional"),
+                              QStringLiteral("y"), false, false};
+        QUuid folderId;
+        {
+            FolderStore store(m_path);
+            store.setAutoSave(false);
+            QVERIFY(store.load());
+            store.setActions({shared, optional});
+            folderId = store.addFolder(makeFolder(QStringLiteral("a")));
+            const QUuid other = store.addFolder(makeFolder(QStringLiteral("b")));
+
+            // Optional actions show nowhere until added.
+            QCOMPARE(store.actionsFor(*store.folder(folderId)).size(), 1);
+
+            store.setActionShown(folderId, optional.id, true);
+            store.setActionShown(folderId, shared.id, false);
+            QList<Action> actions = store.actionsFor(*store.folder(folderId));
+            QCOMPARE(actions.size(), 1);
+            QCOMPARE(actions.first().name, QStringLiteral("Optional"));
+            // Other folders are unaffected.
+            QCOMPARE(store.actionsFor(*store.folder(other)).first().name, QStringLiteral("Shared"));
+
+            // Setting the current state again changes nothing.
+            QSignalSpy spy(&store, &FolderStore::changed);
+            store.setActionShown(folderId, optional.id, true);
+            QCOMPARE(spy.count(), 0);
+            QVERIFY(store.save());
+        }
+
+        FolderStore loaded(m_path);
+        loaded.setAutoSave(false);
+        QVERIFY(loaded.load());
+        QCOMPARE(loaded.actions().at(0).allFolders, true);
+        QCOMPARE(loaded.actions().at(1).allFolders, false);
+        const Folder *f = loaded.folder(folderId);
+        QVERIFY(f);
+        QCOMPARE(f->addedActions, QList<QUuid>{optional.id});
+        QCOMPARE(f->disabledActions, QList<QUuid>{shared.id});
+
+        loaded.setActionShown(folderId, optional.id, false);
+        loaded.setActionShown(folderId, shared.id, true);
+        QVERIFY(loaded.folder(folderId)->addedActions.isEmpty());
+        QVERIFY(loaded.folder(folderId)->disabledActions.isEmpty());
+        QCOMPARE(loaded.actionsFor(*loaded.folder(folderId)).first().name,
+                 QStringLiteral("Shared"));
+    }
+
     void sectionModelFilters()
     {
         FolderStore store(m_path);

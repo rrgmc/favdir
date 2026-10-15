@@ -448,6 +448,19 @@ void MainWindow::showContextMenu(const QUuid &id, const QPoint &globalPos)
         menu.addAction(label, this, [this, id, i] { runAction(id, i); });
     }
     menu.addSeparator();
+    if (!m_store->actions().isEmpty()) {
+        // Show or hide library actions on this folder, including the optional ones.
+        QMenu *library = menu.addMenu(tr("&Library actions"));
+        for (const Action &a : m_store->actions()) {
+            const QString label = a.allFolders ? a.name : tr("%1 (optional)").arg(a.name);
+            QAction *toggle = library->addAction(label);
+            toggle->setCheckable(true);
+            toggle->setChecked(FolderStore::isShown(a, *f));
+            connect(toggle, &QAction::toggled, this, [this, id, actionId = a.id](bool shown) {
+                m_store->setActionShown(id, actionId, shown);
+            });
+        }
+    }
     QMenu *move = menu.addMenu(tr("&Move to"));
     for (Priority p : AllPriorities) {
         QAction *a = move->addAction(priorityLabel(p), this, [this, p] { moveToPriority(p); });

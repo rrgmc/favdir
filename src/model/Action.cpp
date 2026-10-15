@@ -11,6 +11,8 @@ QJsonObject Action::toJson() const
     };
     if (shell)
         obj.insert(QStringLiteral("shell"), true);
+    if (!allFolders)
+        obj.insert(QStringLiteral("allFolders"), false);
     return obj;
 }
 
@@ -23,6 +25,7 @@ Action Action::fromJson(const QJsonObject &obj)
     a.name = obj.value(QStringLiteral("name")).toString();
     a.command = obj.value(QStringLiteral("command")).toString();
     a.shell = obj.value(QStringLiteral("shell")).toBool(false);
+    a.allFolders = obj.value(QStringLiteral("allFolders")).toBool(true);
     return a;
 }
 

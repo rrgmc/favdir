@@ -12,15 +12,17 @@
 
 ActionsDialog::ActionsDialog(const QList<Action> &actions, QWidget *parent)
     : QDialog(parent)
-    , m_editor(new ActionTableEditor(this))
+    , m_editor(new ActionTableEditor(ActionTableEditor::Mode::Library, this))
 {
-    setWindowTitle(tr("Global actions"));
+    setWindowTitle(tr("Action library"));
     resize(720, 420);
     m_editor->setActions(actions);
 
-    auto *intro = new QLabel(tr("These actions appear on every folder, numbered in this order. "
-                                "A folder can hide any of them in its own settings."),
-                             this);
+    auto *intro = new QLabel(
+        tr("Actions marked <b>All folders</b> appear on every folder; a folder can hide them. "
+           "The others are optional: add them to a folder with F2 or its right-click menu. "
+           "Buttons are numbered in this order."),
+        this);
     intro->setWordWrap(true);
     auto *help = new QLabel(ActionTableEditor::helpText(), this);
     help->setWordWrap(true);

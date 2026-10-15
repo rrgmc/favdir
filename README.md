@@ -7,7 +7,8 @@ tool you need with one click or one key. It runs on Windows and macOS.
   **Inactive** tab. Move them between sections and tabs by dragging or with the keyboard.
 - Each folder shows numbered **actions**, such as "Explorer", "Terminal", "Claude" or
   "VS Code". An action is any command; `{path}` and `{name}` are replaced by the folder's
-  path and name.
+  path and name. Actions come from a shared library, either on all folders or added to
+  chosen ones, or belong to a single folder.
 - Closing the window keeps favdir in the system tray (the menu bar on macOS). A **global
   hotkey** shows or hides it from any application.
 
@@ -37,8 +38,17 @@ You can also drag folders from Explorer or Finder onto a section to add them.
 
 ## Actions
 
-Global actions appear on every folder (Tools > Global actions). Each folder can hide some of
-them and add its own (F2). An action has:
+Actions live in the **action library** (Tools > Action library). Each library action is
+either:
+
+- **All folders**: it appears on every folder. A folder can hide it.
+- **Optional**: it appears on no folder until you add it to one. Use this for tools that only
+  some folders need, such as "Open in PyCharm" or "Run the dev server".
+
+To show or hide library actions on one folder, press F2, or right-click the folder and use
+**Library actions**. A folder can also have actions of its own, which no other folder sees.
+
+Every action has:
 
 - a **name**, shown on its button;
 - a **command**, for example `code "{path}"`. Commands start in the folder. The command

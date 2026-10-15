@@ -11,12 +11,17 @@
 // `{name}` to the folder name. The special command `@open` opens the folder in the system file
 // manager. With `shell` set, the expanded command runs through `cmd /c` (Windows) or
 // `/bin/sh -c` (macOS); otherwise it is split into program and arguments and started directly.
+//
+// `allFolders` only matters for actions in the library (FolderStore::actions()): set, the action
+// shows on every folder unless the folder hides it; clear, it shows only on folders it was
+// added to.
 struct Action
 {
     QUuid id;
     QString name;
     QString command;
     bool shell = false;
+    bool allFolders = true;
 
     static constexpr auto OpenCommand = "@open";
 
