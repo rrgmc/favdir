@@ -163,14 +163,37 @@ cpack -C Release
 The disk image holds `favdir.app`, with the Qt libraries it needs, and a link to the
 Applications folder. Drag the app onto the link to install it.
 
-The app is signed ad hoc, not with an Apple Developer ID, and it is not notarised. The first time
-you start a downloaded copy, macOS refuses to open it. Open System Settings > Privacy & Security
-and click **Open Anyway** next to the message about favdir.
+This disk image is signed ad hoc, not with an Apple Developer ID, and it is not notarised. The
+first time you start a downloaded copy, macOS refuses to open it. Open System Settings > Privacy &
+Security and click **Open Anyway** next to the message about favdir.
+
+### Notarised macOS disk image
+
+`scripts/release-macos.sh` builds a disk image that macOS opens without a warning. It runs on a
+Mac with a "Developer ID Application" certificate in the keychain. It builds and tests favdir in
+`build/macos-release`, signs the app and the disk image with the certificate, has Apple notarise
+the disk image, and staples the notarisation ticket to it.
+
+Store your notarisation credentials once. The password is an app-specific password from
+[account.apple.com](https://account.apple.com):
+
+```sh
+xcrun notarytool store-credentials favdir --apple-id <Apple ID> --team-id <team ID>
+```
+
+Then build the disk image. `--upload` attaches it to the GitHub release `v<version>` and replaces
+the ad hoc signed one:
+
+```sh
+sh scripts/release-macos.sh 1.0.0 --upload
+```
 
 ### Releases
 
 Publishing a GitHub release tagged `vX.Y.Z` runs the release workflow. It builds and tests
-favdir with that version, then attaches the Windows setup and the macOS disk image to the release.
+favdir with that version, then attaches the Windows setup and the macOS disk image to the release. The workflow's disk
+image is not notarised: after it finishes, run `scripts/release-macos.sh <version> --upload`.
+Running the workflow again replaces the notarised disk image with the ad hoc signed one.
 
 To change the Qt version, edit the version at the top of both setup scripts and in
 `CMakePresets.json`.

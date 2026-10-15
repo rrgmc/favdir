@@ -127,14 +127,22 @@ qt_generate_deploy_app_script(
 install(SCRIPT ${deploy_script})
 
 # macdeployqt edits the bundle's binaries, which leaves it unsigned, and macOS on Apple silicon
-# does not start unsigned code. Sign it ad hoc: there is no Developer ID here, so the first start
-# of a downloaded copy still needs Open in Privacy & Security.
+# does not start unsigned code. "-" signs ad hoc; a downloaded copy then needs Open Anyway in
+# Privacy & Security on its first start. scripts/release-macos.sh passes a Developer ID instead,
+# with the hardened runtime and secure timestamp that notarisation requires.
 if(APPLE)
-    install(CODE [=[
+    set(FAVDIR_CODESIGN_IDENTITY "-" CACHE STRING "codesign identity for the installed app")
+    set(_codesign_options)
+    if(NOT FAVDIR_CODESIGN_IDENTITY STREQUAL "-")
+        set(_codesign_options --options runtime --timestamp)
+    endif()
+    install(CODE "
         execute_process(
-            COMMAND codesign --force --deep --sign - "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/favdir.app"
+            COMMAND codesign --force --deep ${_codesign_options}
+                    --sign \"${FAVDIR_CODESIGN_IDENTITY}\"
+                    \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/favdir.app\"
             COMMAND_ERROR_IS_FATAL ANY)
-    ]=])
+    ")
 endif()
 
 # The MSVC runtime DLLs, so the app runs on PCs without the Visual C++ Redistributable.

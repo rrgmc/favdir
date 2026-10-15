@@ -67,8 +67,12 @@ actions on them. `README.md` describes the features and the build for users.
   `CMakeLists.txt` rely on `CPACK_VERBATIM_VARIABLES`; the finish page "start at sign-in" option
   is injected through `CPACK_NSIS_INSTALLER_MUI_ICON_CODE`.
 - `cpack -C Release` in a macOS build folder makes the DragNDrop disk image. The install step
-  signs the bundle ad hoc after macdeployqt, which leaves it unsigned; Apple silicon does not
-  start unsigned code.
+  signs the bundle after macdeployqt, which leaves it unsigned; Apple silicon does not start
+  unsigned code. `FAVDIR_CODESIGN_IDENTITY` picks the identity: `-` (ad hoc, the default) or a
+  Developer ID, which adds the hardened runtime and timestamp.
+- `scripts/release-macos.sh <version> [--upload]` makes the notarised disk image on a Mac with the
+  Developer ID certificate and the `favdir` notarytool profile. CI cannot notarise: it holds no
+  Apple credentials. Its disk image is ad hoc signed.
 - `.github/workflows/build.yml` builds and tests on every push. `release.yml` runs when a
   GitHub release tagged `vX.Y.Z` is published: it builds with that version
   (`-DFAVDIR_VERSION`) and attaches the Windows setup and the macOS disk image.
