@@ -176,6 +176,18 @@ private:
             p->drawLine(QPointF(9.2, 4.2), QPointF(11.8, 6.8));
             break;
         }
+        case QIcon::ThemeIcon::EditCopy: {
+            // Two overlapping sheets; the back one shows only where the front one does not cover it.
+            p->drawRoundedRect(QRectF(5.5, 5.5, 8.5, 9), 1.2, 1.2);
+            QPainterPath back;
+            back.moveTo(3.5, 10.5);
+            back.lineTo(2, 10.5);
+            back.lineTo(2, 1.5);
+            back.lineTo(10.5, 1.5);
+            back.lineTo(10.5, 3.5);
+            p->drawPath(back);
+            break;
+        }
         case QIcon::ThemeIcon::ListRemove:
             p->drawEllipse(QPointF(8, 8), 6.25, 6.25);
             p->drawLine(QPointF(5, 8), QPointF(11, 8));

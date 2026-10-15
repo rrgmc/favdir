@@ -33,6 +33,7 @@ tool you need with one click or one key. It runs on Windows and macOS.
 | Ctrl+I | Move the folder between Active and Inactive |
 | Ctrl+Tab (⌃Tab on macOS) | Switch between Active and Inactive |
 | Ctrl+N | Add a folder |
+| Ctrl+C | Copy the folder's full path to the clipboard |
 | F2 | Edit the folder and its actions |
 | Delete | Remove the folder from the list (the folder itself is not touched) |
 | Esc | Clear the filter, or hide the window |
