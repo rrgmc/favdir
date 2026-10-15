@@ -18,8 +18,12 @@ public:
 
     Settings settings() const;
 
+    // Whether favdir should start at sign-in. Only meaningful when LoginItem::isSupported().
+    bool startAtSignIn() const;
+
 private:
     Settings m_original;
     QKeySequenceEdit *m_hotkey;
     QCheckBox *m_closeToTray;
+    QCheckBox *m_startAtSignIn;
 };

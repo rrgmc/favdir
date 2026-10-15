@@ -40,6 +40,7 @@ qt_add_library(favdir_ui STATIC
     src/ui/FolderDialog.h src/ui/FolderDialog.cpp
     src/ui/Icons.h src/ui/Icons.cpp
     src/ui/ItemCheckStyle.h src/ui/ItemCheckStyle.cpp
+    src/ui/LoginItem.h
     src/ui/MainWindow.h src/ui/MainWindow.cpp
     src/ui/PriorityBoard.h src/ui/PriorityBoard.cpp
     src/ui/SectionView.h src/ui/SectionView.cpp
@@ -49,11 +50,18 @@ qt_add_library(favdir_ui STATIC
 target_link_libraries(favdir_ui PUBLIC favdir_core Qt6::Widgets)
 if(APPLE)
     enable_language(OBJCXX)
-    target_sources(favdir_ui PRIVATE src/ui/TrayIcon_mac.mm)
-    set_source_files_properties(src/ui/TrayIcon_mac.mm PROPERTIES COMPILE_OPTIONS -fobjc-arc)
-    target_link_libraries(favdir_ui PUBLIC "-framework AppKit")
+    target_sources(favdir_ui PRIVATE
+        src/ui/TrayIcon_mac.mm src/ui/LoginItem_mac.mm src/ui/MacApp.h src/ui/MacApp.mm)
+    set_source_files_properties(src/ui/TrayIcon_mac.mm src/ui/LoginItem_mac.mm src/ui/MacApp.mm
+        PROPERTIES COMPILE_OPTIONS -fobjc-arc)
+    target_link_libraries(favdir_ui PUBLIC "-framework AppKit" "-framework ServiceManagement")
 else()
     target_sources(favdir_ui PRIVATE src/ui/TrayIcon.cpp)
+endif()
+if(WIN32)
+    target_sources(favdir_ui PRIVATE src/ui/LoginItem_win.cpp)
+elseif(NOT APPLE)
+    target_sources(favdir_ui PRIVATE src/ui/LoginItem_none.cpp)
 endif()
 
 qt_add_executable(favdir WIN32 MACOSX_BUNDLE

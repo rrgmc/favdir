@@ -2,6 +2,10 @@
 #include "platform/GlobalHotkey.h"
 #include "platform/SingleInstance.h"
 #include "ui/Icons.h"
+#include "ui/LoginItem.h"
+#ifdef Q_OS_MACOS
+#include "ui/MacApp.h"
+#endif
 #include "ui/MainWindow.h"
 
 #include <QApplication>
@@ -71,15 +75,18 @@ int main(int argc, char *argv[])
 
 #ifdef Q_OS_MACOS
     // Clicking the Dock icon while the window is hidden brings it back.
-    QObject::connect(&app, &QGuiApplication::applicationStateChanged, &window,
-                     [&window](Qt::ApplicationState state) {
-                         if (state == Qt::ApplicationActive && !window.isVisible())
-                             window.showAndFocus();
-                     });
+    MacApp::whenReopened([&window] {
+        if (!window.isVisible())
+            window.showAndFocus();
+    });
 #endif
 
-    // --hidden (used when starting at sign-in) keeps favdir in the tray until it is called.
-    if (!app.arguments().contains(QStringLiteral("--hidden")))
-        window.showAndFocus();
+    // Starting at sign-in keeps favdir in the tray until it is called. Windows passes --hidden;
+    // macOS passes no arguments, so LoginItem reads it from the launch event.
+    const bool hidden = app.arguments().contains(QStringLiteral("--hidden"));
+    LoginItem::whenLaunched([&window, hidden](bool atSignIn) {
+        if (!hidden && !atSignIn)
+            window.showAndFocus();
+    });
     return app.exec();
 }
