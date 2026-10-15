@@ -124,10 +124,19 @@ private slots:
 
     void enterInFilterRunsFirstMatch()
     {
-        QTest::keyClicks(m_filter, QStringLiteral("b"));
+        // The filter also matches paths, and the temporary folder has a random name, so filter on
+        // a word that cannot turn up in it by chance.
+        QDir(m_dir.path()).mkpath(QStringLiteral("needle"));
+        Folder needle;
+        needle.name = QStringLiteral("needle");
+        needle.path = m_dir.filePath(QStringLiteral("needle"));
+        needle.priority = Priority::Low;
+        m_store->addFolder(needle);
+
+        QTest::keyClicks(m_filter, QStringLiteral("needle"));
         key(Qt::Key_Return);
-        QCOMPARE(currentName(), QStringLiteral("b"));
-        QCOMPARE(m_window->statusBar()->currentMessage(), QStringLiteral("Noop: b"));
+        QCOMPARE(currentName(), QStringLiteral("needle"));
+        QCOMPARE(m_window->statusBar()->currentMessage(), QStringLiteral("Noop: needle"));
     }
 
     void numberKeyRunsAction()
