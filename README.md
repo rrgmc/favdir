@@ -5,10 +5,11 @@ tool you need with one click or one key. It runs on Windows and macOS.
 
 - Folders sit in **High**, **Medium** and **Low** sections, on an **Active** and an
   **Inactive** tab. Move them between sections and tabs by dragging or with the keyboard.
-- Each folder shows numbered **actions**, such as "Explorer", "Terminal", "Claude" or
-  "VS Code". An action is any command; `{path}` and `{name}` are replaced by the folder's
-  path and name. Actions come from a shared library, either on all folders or added to
-  chosen ones, or belong to a single folder.
+- Each folder shows numbered **actions**. favdir starts with "Explorer" (or "Finder") and
+  "Terminal"; add any command you like, such as Claude Code or VS Code. In a command,
+  `{path}` and `{name}` are replaced by the folder's path and name. Actions come from a
+  shared library, either on all folders or added to chosen ones, or belong to a single
+  folder.
 - Closing the window keeps favdir in the system tray (the menu bar on macOS). A **global
   hotkey** shows or hides it from any application.
 
@@ -59,6 +60,17 @@ Every action has:
   `@open` opens the folder in Explorer or Finder;
 - a **Shell** option, which runs the command through `cmd /c` (Windows) or `/bin/sh -c`
   (macOS). Use it for scripts, `.cmd` files, pipes or `&&`.
+
+### Example actions
+
+| Name | Windows command | macOS command | Shell |
+|---|---|---|---|
+| Claude | `wt -d "{path}" cmd /k claude` | `osascript -e 'tell application "Terminal"' -e 'activate' -e 'do script "cd \"{path}\" && claude"' -e 'end tell'` | macOS only |
+| VS Code | `code "{path}"` | `open -a "Visual Studio Code" "{path}"` | Windows only |
+| Git Bash | `"C:\Program Files\Git\git-bash.exe" --cd="{path}"` | | |
+
+On Windows, `code` is a `.cmd` script, so it needs **Shell**. On macOS, apps started from the
+Dock do not see your shell's `PATH`, so `open -a` is more reliable than `code`.
 
 ## Data
 
