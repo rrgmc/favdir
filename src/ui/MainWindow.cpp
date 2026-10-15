@@ -281,6 +281,12 @@ void MainWindow::createTray()
     menu->addAction(tr("Quit"), qApp, &QApplication::quit);
     m_tray = new TrayIcon(Icons::trayIcon(), QStringLiteral("favdir"), menu, this);
     connect(m_tray, &TrayIcon::triggered, this, &MainWindow::toggleVisible);
+    // Started with --hidden: favdir lives only in the tray. Checked once main() has had the
+    // chance to show the window.
+    QTimer::singleShot(0, this, [this] {
+        if (!isVisible())
+            m_tray->setDockIconVisible(false);
+    });
 }
 
 PriorityBoard *MainWindow::currentBoard() const
@@ -339,6 +345,8 @@ void MainWindow::updateTabTitles()
 
 void MainWindow::showAndFocus()
 {
+    if (m_tray)
+        m_tray->setDockIconVisible(true);
     if (isMinimized())
         showNormal();
     else
@@ -366,9 +374,10 @@ void MainWindow::toggleVisible()
 void MainWindow::hideWindow()
 {
     saveGeometryState();
-    if (m_tray)
+    if (m_tray) {
         hide();
-    else
+        m_tray->setDockIconVisible(false);
+    } else
         showMinimized();
 }
 
