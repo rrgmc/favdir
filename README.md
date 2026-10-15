@@ -249,3 +249,7 @@ To change the Qt version, edit the version at the top of both setup scripts and 
 ## License
 
 favdir is released under the [MIT License](LICENSE).
+
+## Author
+
+Rangel Reale (<realerangel@gmail.com>)
