@@ -85,8 +85,9 @@ actions on them. `README.md` describes the features and the build for users.
   workflow runs it with a temporary keychain and an App Store Connect API key, from the secrets
   of the `release` environment. That job holds secrets: keep its actions pinned to commits.
 - `.github/workflows/build.yml` builds and tests on every push. `release.yml` runs when a
-  GitHub release tagged `vX.Y.Z` is published: it builds with that version
-  (`-DFAVDIR_VERSION`) and attaches the Windows setup and the macOS disk image.
+  tag `vX.Y.Z` is pushed: it publishes the GitHub release (unless it exists), builds with that
+  version (`-DFAVDIR_VERSION`) and attaches the Windows setup and the macOS disk image. The tag
+  is the version; nothing in the tree is bumped for a release.
 
 ## Public repository
 

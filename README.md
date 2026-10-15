@@ -227,9 +227,9 @@ sh scripts/release-macos.sh 1.0.0 --upload
 
 ### Releases
 
-Publishing a GitHub release tagged `vX.Y.Z` runs the release workflow. It builds and tests
-favdir with that version, then attaches the Windows setup and the notarised macOS disk image to
-the release. The macOS job runs `scripts/release-macos.sh` with these secrets of the `release`
+Pushing a tag `vX.Y.Z` runs the release workflow. It publishes a GitHub release for the tag,
+builds and tests favdir with that version, then attaches the Windows setup and the notarised
+macOS disk image to the release. The macOS job runs `scripts/release-macos.sh` with these secrets of the `release`
 environment:
 
 | Secret | Value |
