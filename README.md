@@ -158,3 +158,7 @@ favdir with that version, then attaches the Windows setup to the release.
 
 To change the Qt version, edit the version at the top of both setup scripts and in
 `CMakePresets.json`.
+
+## License
+
+favdir is released under the [MIT License](LICENSE).
