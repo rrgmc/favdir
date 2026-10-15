@@ -1,10 +1,19 @@
 name: release
 
 # Publishing a GitHub release tagged vX.Y.Z (or X.Y.Z) builds and tests favdir, then attaches
-# the Windows setup to the release.
+# the Windows setup to the release. To redo it for an existing release, run the workflow by
+# hand with the tag: the code comes from the tag, this file from the branch it runs on.
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to build, for example v1.0.0
+        required: true
+
+env:
+  TAG: ${{ github.event.release.tag_name || inputs.tag }}
 
 permissions:
   contents: write
@@ -15,6 +24,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
 
       - uses: astral-sh/setup-uv@v5
 
@@ -28,7 +39,7 @@ jobs:
         id: version
         shell: bash
         run: |
-          tag="${{ github.event.release.tag_name }}"
+          tag="$TAG"
           version="${tag#v}"
           if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::Release tag '$tag' is not vX.Y.Z or X.Y.Z"
@@ -46,7 +57,9 @@ jobs:
         run: pwsh -File scripts/setup.ps1
 
       - name: Configure
-        run: cmake --preset windows-ninja -DFAVDIR_VERSION=${{ steps.version.outputs.version }}
+        # bash, not PowerShell: PowerShell splits -DFAVDIR_VERSION=1.0.0 at the first dot.
+        shell: bash
+        run: cmake --preset windows-ninja "-DFAVDIR_VERSION=${{ steps.version.outputs.version }}"
 
       - name: Build
         run: cmake --build --preset windows-ninja
@@ -63,5 +76,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload "${{ github.event.release.tag_name }}" \
+          gh release upload "$TAG" \
             "build/windows-ninja/favdir-${{ steps.version.outputs.version }}-win64.exe" --clobber
