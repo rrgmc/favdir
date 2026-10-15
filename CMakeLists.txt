@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(favdir VERSION 0.1.0 LANGUAGES CXX)
+# Release builds pass the tag's version, for example -DFAVDIR_VERSION=1.2.0.
+set(FAVDIR_VERSION "0.1.0" CACHE STRING "favdir version (major.minor.patch)")
+project(favdir VERSION ${FAVDIR_VERSION} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -109,5 +111,59 @@ qt_generate_deploy_app_script(
     TARGET favdir
     OUTPUT_SCRIPT deploy_script
     NO_TRANSLATIONS
-    NO_UNSUPPORTED_PLATFORM_ERROR)
+    NO_UNSUPPORTED_PLATFORM_ERROR
+    # The runtime DLLs come from InstallRequiredSystemLibraries below; Qt Widgets on Direct3D
+    # 11 needs neither the redistributable installer nor the shader compilers.
+    DEPLOY_TOOL_OPTIONS --no-compiler-runtime --no-system-d3d-compiler --no-system-dxc-compiler
+                        --no-opengl-sw)
 install(SCRIPT ${deploy_script})
+
+# The MSVC runtime DLLs, so the app runs on PCs without the Visual C++ Redistributable.
+if(WIN32)
+    set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION ${CMAKE_INSTALL_BINDIR})
+    include(InstallRequiredSystemLibraries)
+endif()
+
+# Windows setup: `cpack --config build/<preset>/CPackConfig.cmake -C Release` builds
+# favdir-<version>-win64.exe with NSIS.
+set(CPACK_PACKAGE_NAME favdir)
+set(CPACK_PACKAGE_VENDOR favdir)
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Favourite folders with one-click actions")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/rrgmc/favdir")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY favdir)
+set(CPACK_PACKAGE_EXECUTABLES favdir favdir)
+set(CPACK_GENERATOR NSIS)
+set(CPACK_NSIS_PACKAGE_NAME favdir)
+set(CPACK_NSIS_DISPLAY_NAME favdir)
+set(CPACK_NSIS_INSTALLED_ICON_NAME [=[bin\favdir.exe]=])
+set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
+set(CPACK_NSIS_URL_INFO_ABOUT "${CPACK_PACKAGE_HOMEPAGE_URL}")
+file(TO_NATIVE_PATH "${CMAKE_SOURCE_DIR}/resources/favdir.ico" _favdir_ico)
+
+# Icons, and a checkbox on the last page that starts favdir at sign-in. CPack has no hook for
+# finish page options, so they go in with the icon defines, which come right before the pages.
+# The value goes in the per-user Run key; --hidden starts favdir in the tray.
+set(_nsis_code [=[
+!define MUI_ICON "@ICO@"
+!define MUI_UNICON "@ICO@"
+!define MUI_FINISHPAGE_SHOWREADME ""
+!define MUI_FINISHPAGE_SHOWREADME_TEXT "Start favdir when I sign in"
+!define MUI_FINISHPAGE_SHOWREADME_FUNCTION FavdirAutostart
+Function FavdirAutostart
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "favdir" '"$INSTDIR\bin\favdir.exe" --hidden'
+FunctionEnd
+]=])
+string(REPLACE "@ICO@" "${_favdir_ico}" CPACK_NSIS_INSTALLER_MUI_ICON_CODE "${_nsis_code}")
+# Close a running favdir so its files can be replaced, and forget the old autostart choice;
+# the finish page asks again.
+set(CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS [=[
+  nsExec::Exec 'taskkill /F /IM favdir.exe'
+  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "favdir"
+]=])
+set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS [=[
+  nsExec::Exec 'taskkill /F /IM favdir.exe'
+  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "favdir"
+]=])
+# Pass the NSIS code above through unchanged; without this CPack strips its quotes.
+set(CPACK_VERBATIM_VARIABLES ON)
+include(CPack)

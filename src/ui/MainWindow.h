@@ -57,4 +57,5 @@ private:
     PriorityBoard *m_boards[2];  // [0] active, [1] inactive
     QSystemTrayIcon *m_tray = nullptr;
     QString m_hotkeyError;
+    int m_trayAttempts = 0;
 };

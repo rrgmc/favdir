@@ -22,6 +22,7 @@
 #include <QStatusBar>
 #include <QSystemTrayIcon>
 #include <QTabWidget>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #ifdef Q_OS_WIN
@@ -30,6 +31,8 @@
 
 namespace {
 constexpr int MessageTimeoutMs = 5000;
+constexpr int TrayAttempts = 30;
+constexpr int TrayRetryMs = 2000;
 
 QKeySequence nextTabKey()
 {
@@ -162,8 +165,12 @@ void MainWindow::createActions()
 
 void MainWindow::createTray()
 {
-    if (!QSystemTrayIcon::isSystemTrayAvailable())
+    if (!QSystemTrayIcon::isSystemTrayAvailable()) {
+        // At sign-in favdir can start before the taskbar; try again for a minute.
+        if (++m_trayAttempts < TrayAttempts)
+            QTimer::singleShot(TrayRetryMs, this, &MainWindow::createTray);
         return;
+    }
     m_tray = new QSystemTrayIcon(Icons::trayIcon(), this);
     m_tray->setToolTip(QStringLiteral("favdir"));
     auto *menu = new QMenu(this);

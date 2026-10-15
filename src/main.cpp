@@ -78,6 +78,8 @@ int main(int argc, char *argv[])
                      });
 #endif
 
-    window.showAndFocus();
+    // --hidden (used when starting at sign-in) keeps favdir in the tray until it is called.
+    if (!app.arguments().contains(QStringLiteral("--hidden")))
+        window.showAndFocus();
     return app.exec();
 }
