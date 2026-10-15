@@ -1,7 +1,9 @@
 #include "ActionTableEditor.h"
 
+#include <QDropEvent>
 #include <QHBoxLayout>
 #include <QHeaderView>
+#include <QKeyEvent>
 #include <QPushButton>
 #include <QTableWidget>
 #include <QVBoxLayout>
@@ -9,11 +11,91 @@
 namespace {
 enum Column { NameColumn, CommandColumn, ShellColumn, AllFoldersColumn, ColumnCount };
 constexpr int IdRole = Qt::UserRole + 1;
+
+// A table whose rows reorder by dragging or with Ctrl+Shift+Up/Down.
+//
+// QTableWidget's own row moves drop cells onto cells, so drops are handled here: the dragged
+// row is moved whole, and the drag reports a copy so the view does not delete the source row.
+class ActionTable : public QTableWidget
+{
+public:
+    ActionTable(int rows, int columns, QWidget *parent)
+        : QTableWidget(rows, columns, parent)
+    {
+        setDragEnabled(true);
+        setAcceptDrops(true);
+        setDragDropMode(QAbstractItemView::DragDrop);
+        setDefaultDropAction(Qt::MoveAction);
+        setDropIndicatorShown(true);
+        setDragDropOverwriteMode(false);
+    }
+
+    // Moves a row so that it ends up at index `to`.
+    void moveRow(int from, int to)
+    {
+        if (from < 0 || from >= rowCount() || to < 0 || to >= rowCount() || from == to)
+            return;
+        const int column = qMax(0, currentColumn());
+        QList<QTableWidgetItem *> items;
+        for (int c = 0; c < columnCount(); ++c)
+            items.append(takeItem(from, c));
+        removeRow(from);
+        insertRow(to);
+        for (int c = 0; c < columnCount(); ++c)
+            setItem(to, c, items.at(c));
+        setCurrentCell(to, column);
+    }
+
+protected:
+    void keyPressEvent(QKeyEvent *event) override
+    {
+        if (event->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier)
+            && (event->key() == Qt::Key_Up || event->key() == Qt::Key_Down)) {
+            const int row = currentRow();
+            moveRow(row, row + (event->key() == Qt::Key_Up ? -1 : 1));
+            return;
+        }
+        QTableWidget::keyPressEvent(event);
+    }
+
+    void dragEnterEvent(QDragEnterEvent *event) override
+    {
+        if (event->source() != this) {
+            event->ignore();
+            return;
+        }
+        QTableWidget::dragEnterEvent(event);
+    }
+
+    void dropEvent(QDropEvent *event) override
+    {
+        const int from = currentRow();
+        if (event->source() != this || from < 0) {
+            event->ignore();
+            return;
+        }
+        int to = rowAt(event->position().toPoint().y());
+        if (to < 0)
+            to = rowCount();  // below the last row
+        else if (dropIndicatorPosition() == QAbstractItemView::BelowItem)
+            ++to;
+        // `to` counts the row being moved; once it is taken out, later rows shift up.
+        if (to > from)
+            --to;
+        moveRow(from, qMin(to, rowCount() - 1));
+        event->setDropAction(Qt::CopyAction);
+        event->accept();
+        // What the base dropEvent would have done after a drop.
+        stopAutoScroll();
+        setState(NoState);
+        viewport()->update();
+    }
+};
 } // namespace
 
 ActionTableEditor::ActionTableEditor(Mode mode, QWidget *parent)
     : QWidget(parent)
-    , m_table(new QTableWidget(0, ColumnCount, this))
+    , m_table(new ActionTable(0, ColumnCount, this))
 {
     m_table->setHorizontalHeaderLabels({tr("Name"), tr("Command"), tr("Shell"), tr("All folders")});
     m_table->horizontalHeaderItem(AllFoldersColumn)
@@ -36,6 +118,8 @@ ActionTableEditor::ActionTableEditor(Mode mode, QWidget *parent)
     auto *remove = new QPushButton(tr("&Remove"), this);
     auto *up = new QPushButton(tr("Move &up"), this);
     auto *down = new QPushButton(tr("Move do&wn"), this);
+    up->setToolTip(tr("Or drag the row, or press Ctrl+Shift+Up"));
+    down->setToolTip(tr("Or drag the row, or press Ctrl+Shift+Down"));
 
     connect(add, &QPushButton::clicked, this, [this] {
         appendRow(Action{QUuid::createUuid(), QString(), QString(), false, true});
@@ -122,16 +206,5 @@ void ActionTableEditor::appendRow(const Action &action)
 void ActionTableEditor::moveCurrent(int delta)
 {
     const int row = m_table->currentRow();
-    const int target = row + delta;
-    if (row < 0 || target < 0 || target >= m_table->rowCount())
-        return;
-    const int column = m_table->currentColumn();
-    QList<QTableWidgetItem *> items;
-    for (int c = 0; c < ColumnCount; ++c)
-        items.append(m_table->takeItem(row, c));
-    m_table->removeRow(row);
-    m_table->insertRow(target);
-    for (int c = 0; c < ColumnCount; ++c)
-        m_table->setItem(target, c, items.at(c));
-    m_table->setCurrentCell(target, column);
+    static_cast<ActionTable *>(m_table)->moveRow(row, row + delta);
 }

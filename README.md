@@ -45,6 +45,10 @@ either:
 - **Optional**: it appears on no folder until you add it to one. Use this for tools that only
   some folders need, such as "Open in PyCharm" or "Run the dev server".
 
+Reorder actions in either table by dragging a row, with Move up / Move down, or with
+Ctrl+Shift+Up and Ctrl+Shift+Down. The buttons on a folder are numbered in this order:
+library actions first, then the folder's own.
+
 To show or hide library actions on one folder, press F2, or right-click the folder and use
 **Library actions**. A folder can also have actions of its own, which no other folder sees.
 

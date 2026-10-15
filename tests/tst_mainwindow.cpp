@@ -1,10 +1,12 @@
 #include "model/FolderStore.h"
+#include "ui/ActionTableEditor.h"
 #include "ui/MainWindow.h"
 #include "ui/SectionView.h"
 
 #include <QApplication>
 #include <QLineEdit>
 #include <QStatusBar>
+#include <QTableWidget>
 #include <QTabWidget>
 #include <QTemporaryDir>
 #include <QTest>
@@ -149,6 +151,39 @@ private slots:
         key(Qt::Key_Tab, Qt::ControlModifier);
 #endif
         QCOMPARE(tabs->currentIndex(), 1);
+    }
+
+    void actionTableReordersWithKeys()
+    {
+        ActionTableEditor editor(ActionTableEditor::Mode::Library);
+        const auto action = [](const char *name) {
+            return Action{QUuid::createUuid(), QString::fromLatin1(name), QStringLiteral("x"),
+                          false, true};
+        };
+        editor.setActions({action("a"), action("b"), action("c")});
+        editor.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&editor));
+        auto *table = editor.findChild<QTableWidget *>();
+        QVERIFY(table);
+        table->setFocus();
+        table->setCurrentCell(0, 0);
+
+        const auto order = [&editor] {
+            QStringList names;
+            for (const Action &a : editor.actions())
+                names.append(a.name);
+            return names;
+        };
+        const Qt::KeyboardModifiers mods = Qt::ControlModifier | Qt::ShiftModifier;
+        QTest::keyClick(table, Qt::Key_Down, mods);
+        QCOMPARE(order(), (QStringList{"b", "a", "c"}));
+        QTest::keyClick(table, Qt::Key_Down, mods);
+        QCOMPARE(order(), (QStringList{"b", "c", "a"}));
+        QTest::keyClick(table, Qt::Key_Down, mods);  // already last
+        QCOMPARE(order(), (QStringList{"b", "c", "a"}));
+        QTest::keyClick(table, Qt::Key_Up, mods);
+        QCOMPARE(order(), (QStringList{"b", "a", "c"}));
+        QCOMPARE(table->currentRow(), 1);
     }
 
 private:
