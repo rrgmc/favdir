@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QProcess>
+#include <QStandardPaths>
 #include <QTemporaryFile>
 #include <QUrl>
 
@@ -12,6 +13,7 @@
 
 #ifdef Q_OS_WIN
 #include <windows.h>
+#include <userenv.h>
 #endif
 
 namespace ActionRunner {
@@ -76,6 +78,35 @@ bool startWatched(QProcess *process, const QString &actionName,
     return false;
 }
 } // namespace
+
+QProcessEnvironment environmentForActions()
+{
+#ifdef Q_OS_WIN
+    HANDLE token = nullptr;
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_DUPLICATE, &token))
+        return QProcessEnvironment::systemEnvironment();
+    void *block = nullptr;
+    const bool created = CreateEnvironmentBlock(&block, token, FALSE);
+    CloseHandle(token);
+    if (!created)
+        return QProcessEnvironment::systemEnvironment();
+
+    // The block is a list of NAME=value strings, ended by an empty string. Entries that start
+    // with '=' (such as "=C:=C:\") hold per-drive directories, not variables.
+    QProcessEnvironment env;
+    for (auto *entry = static_cast<const wchar_t *>(block); *entry; entry += wcslen(entry) + 1) {
+        const QString text = QString::fromWCharArray(entry);
+        const qsizetype equals = text.indexOf(QLatin1Char('='), 1);
+        if (text.startsWith(QLatin1Char('=')) || equals < 0)
+            continue;
+        env.insert(text.left(equals), text.mid(equals + 1));
+    }
+    DestroyEnvironmentBlock(block);
+    return env;
+#else
+    return QProcessEnvironment::systemEnvironment();
+#endif
+}
 
 QString expand(const QString &command, const Folder &folder)
 {
@@ -146,8 +177,22 @@ bool run(const Action &action, const Folder &folder, QString *error,
         return false;
     }
 
+    const QProcessEnvironment env = environmentForActions();
+    QString program = inv->program;
+#ifdef Q_OS_WIN
+    // Windows looks for the program on favdir's own PATH, which may be out of date.
+    if (inv->nativeArguments.isEmpty() && !program.contains(QLatin1Char('/'))
+        && !program.contains(QLatin1Char('\\'))) {
+        const QString found = QStandardPaths::findExecutable(
+            program, env.value(QStringLiteral("PATH")).split(QLatin1Char(';'), Qt::SkipEmptyParts));
+        if (!found.isEmpty())
+            program = found;
+    }
+#endif
+
     auto process = std::make_unique<QProcess>();
-    process->setProgram(inv->program);
+    process->setProgram(program);
+    process->setProcessEnvironment(env);
     process->setArguments(inv->arguments);
     process->setWorkingDirectory(inv->workingDirectory);
 #ifdef Q_OS_WIN

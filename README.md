@@ -66,6 +66,9 @@ Every action has:
 - a **Shell** option, which runs the command through `cmd /c` (Windows) or `/bin/sh -c`
   (macOS). Use it for scripts, `.cmd` files, pipes or `&&`.
 
+On Windows, commands get the environment variables as they are set in Windows when the action
+runs. A change to `PATH` therefore takes effect without restarting favdir.
+
 The **Add** button in either table has templates for common commands. Each one asks for what
 it needs and fills in an ordinary action, which you can then edit:
 

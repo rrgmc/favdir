@@ -3,6 +3,7 @@
 #include "model/Action.h"
 #include "model/Folder.h"
 
+#include <QProcessEnvironment>
 #include <QString>
 #include <QStringList>
 
@@ -30,6 +31,11 @@ QString expand(const QString &command, const Folder &folder);
 // empty or cannot be parsed.
 std::optional<Invocation> prepare(const Action &action, const Folder &folder,
                                   QString *error = nullptr);
+
+// The environment actions start with. On Windows it is read again from the registry, as for a
+// new sign-in, so changes made after favdir started (such as to PATH) reach the action. On
+// macOS it is favdir's own environment.
+QProcessEnvironment environmentForActions();
 
 // Called with a message when a started action later fails.
 using FailureHandler = std::function<void(const QString &message)>;
