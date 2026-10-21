@@ -200,26 +200,80 @@ set(CPACK_NSIS_URL_INFO_ABOUT "${CPACK_PACKAGE_HOMEPAGE_URL}")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
 file(TO_NATIVE_PATH "${CMAKE_SOURCE_DIR}/resources/favdir.ico" _favdir_ico)
 
-# Icons, and a checkbox on the last page that starts favdir at sign-in. CPack has no hook for
-# finish page options, so they go in with the icon defines, which come right before the pages.
-# The value goes in the per-user Run key; --hidden starts favdir in the tray.
+# Icons, and two checkboxes on the last page: run favdir now, and start it at sign-in. CPack
+# has no hook for finish page options, so they go in with the icon defines, which come right
+# before the pages. The sign-in value goes in the per-user Run key; --hidden starts favdir in
+# the tray.
+#
+# The sign-in checkbox starts ticked on a first install and keeps the installed version's
+# choice on an upgrade. The old version's uninstaller removes the Run value before the new
+# files go in, so FavdirReadStartAtSignIn reads it first, at the start of .onInit.
 set(_nsis_code [=[
 !define MUI_ICON "@ICO@"
 !define MUI_UNICON "@ICO@"
+!define MUI_FINISHPAGE_RUN ""
+!define MUI_FINISHPAGE_RUN_TEXT "Run favdir"
+!define MUI_FINISHPAGE_RUN_FUNCTION FavdirRun
 !define MUI_FINISHPAGE_SHOWREADME ""
 !define MUI_FINISHPAGE_SHOWREADME_TEXT "Start favdir when I sign in"
 !define MUI_FINISHPAGE_SHOWREADME_FUNCTION FavdirAutostart
+Var FavdirStartAtSignIn
+Function FavdirReadStartAtSignIn
+  Push $0
+  StrCpy $FavdirStartAtSignIn 1
+  ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\favdir" "UninstallString"
+  StrCmp $0 "" done
+  ClearErrors
+  ReadRegStr $0 HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "favdir"
+  IfErrors 0 done
+  StrCpy $FavdirStartAtSignIn 0
+done:
+  Pop $0
+FunctionEnd
 Function FavdirAutostart
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "favdir" '"$INSTDIR\bin\favdir.exe" --hidden'
 FunctionEnd
+; The setup runs elevated; Explorer starts favdir as the signed-in user instead.
+Function FavdirRun
+  Exec '"$WINDIR\explorer.exe" "$INSTDIR\bin\favdir.exe"'
+FunctionEnd
 ]=])
 string(REPLACE "@ICO@" "${_favdir_ico}" CPACK_NSIS_INSTALLER_MUI_ICON_CODE "${_nsis_code}")
-# Close a running favdir so its files can be replaced, and forget the old autostart choice;
-# the finish page asks again.
+# Close a running favdir so its files can be replaced, and remove the Run value, which may
+# point at an old folder. The finish page writes it again; a silent install has no finish
+# page, so it writes the value here.
 set(CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS [=[
   nsExec::Exec 'taskkill /F /IM favdir.exe'
   DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "favdir"
+  ${If} ${Silent}
+  ${AndIf} $FavdirStartAtSignIn == 1
+    Call FavdirAutostart
+  ${EndIf}
 ]=])
+# CPack's NSIS template has no hook in .onInit or on the finish page, so CPack gets a copy
+# that calls FavdirReadStartAtSignIn and unticks the sign-in checkbox when needed.
+if(WIN32)
+    file(READ "${CMAKE_ROOT}/Modules/Internal/CPack/NSIS.template.in" _nsis_template)
+    set(_nsis_oninit "Function .onInit\n")
+    set(_nsis_finish "!insertmacro MUI_PAGE_FINISH\n")
+    foreach(_anchor IN ITEMS _nsis_oninit _nsis_finish)
+        string(FIND "${_nsis_template}" "${${_anchor}}" _pos)
+        if(_pos EQUAL -1)
+            message(FATAL_ERROR "CPack's NSIS template has no \"${${_anchor}}\"; update CMakeLists.txt.")
+        endif()
+    endforeach()
+    string(REPLACE "${_nsis_oninit}" "${_nsis_oninit}  Call FavdirReadStartAtSignIn\n"
+        _nsis_template "${_nsis_template}")
+    string(REPLACE "${_nsis_finish}" [=[!define MUI_PAGE_CUSTOMFUNCTION_SHOW FavdirFinishShow
+  !insertmacro MUI_PAGE_FINISH
+  Function FavdirFinishShow
+    StrCmp $FavdirStartAtSignIn 1 +2
+      SendMessage $mui.FinishPage.ShowReadme ${BM_SETCHECK} ${BST_UNCHECKED} 0
+  FunctionEnd
+]=] _nsis_template "${_nsis_template}")
+    file(WRITE "${CMAKE_BINARY_DIR}/cpack/NSIS.template.in" "${_nsis_template}")
+    list(PREPEND CMAKE_MODULE_PATH "${CMAKE_BINARY_DIR}/cpack")
+endif()
 set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS [=[
   nsExec::Exec 'taskkill /F /IM favdir.exe'
   DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "favdir"

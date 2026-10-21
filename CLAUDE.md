@@ -83,7 +83,10 @@ actions on them. `README.md` describes the features and the build for users.
 - `cmake --install` deploys the Qt runtime next to the app; the prefix must be absolute.
 - `cpack -C Release` in a Windows build folder makes the NSIS setup. The NSIS snippets in
   `CMakeLists.txt` rely on `CPACK_VERBATIM_VARIABLES`; the finish page "start at sign-in" option
-  is injected through `CPACK_NSIS_INSTALLER_MUI_ICON_CODE`.
+  is injected through `CPACK_NSIS_INSTALLER_MUI_ICON_CODE`. CPack also gets a patched copy of
+  its `NSIS.template.in` (in `build/<preset>/cpack`), which reads the old sign-in setting in
+  `.onInit` before the old uninstaller removes it and sets the finish page checkbox from it.
+  Configuring fails if the template's anchors change in a new CMake version.
 - `cpack -C Release` in a macOS build folder makes the DragNDrop disk image. The install step
   signs the bundle after macdeployqt, which leaves it unsigned; Apple silicon does not start
   unsigned code. `FAVDIR_CODESIGN_IDENTITY` picks the identity: `-` (ad hoc, the default) or a
