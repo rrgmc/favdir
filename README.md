@@ -192,8 +192,9 @@ cpack -C Release
 ```
 
 The setup installs favdir with the Qt and Visual C++ runtime libraries it needs, adds a Start
-menu entry, and on its last page offers to start favdir when you sign in. favdir then starts
-hidden in the tray (`favdir --hidden`). The same option is in favdir's Settings.
+menu entry, and on its last page offers to run favdir and to start it when you sign in. favdir
+then starts hidden in the tray (`favdir --hidden`). The same option is in favdir's Settings.
+When you install a new version over an old one, the sign-in option keeps its current setting.
 
 ### macOS disk image
 
