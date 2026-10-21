@@ -31,6 +31,9 @@ qt_add_library(favdir_core STATIC
 )
 target_include_directories(favdir_core PUBLIC src)
 target_link_libraries(favdir_core PUBLIC Qt6::Gui)
+if(WIN32)
+    target_link_libraries(favdir_core PUBLIC Userenv)
+endif()
 
 # Widgets, shared by the app and the GUI test.
 qt_add_library(favdir_ui STATIC

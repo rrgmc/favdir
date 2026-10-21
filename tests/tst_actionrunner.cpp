@@ -116,6 +116,20 @@ private slots:
         QVERIFY(!failed);
     }
 
+    void environmentIsFreshOnWindows()
+    {
+#ifdef Q_OS_WIN
+        qputenv("FAVDIR_TEST_ONLY_IN_PROCESS", "1");
+        const QProcessEnvironment env = ActionRunner::environmentForActions();
+        QVERIFY(!env.contains(QStringLiteral("FAVDIR_TEST_ONLY_IN_PROCESS")));
+        QVERIFY(env.contains(QStringLiteral("PATH")));
+        QVERIFY(env.contains(QStringLiteral("SystemRoot")));
+        QVERIFY(env.contains(QStringLiteral("USERPROFILE")));
+#else
+        QSKIP("Windows only");
+#endif
+    }
+
     void defaultTerminalMatchesWindowsTerminal()
     {
 #ifdef Q_OS_WIN
