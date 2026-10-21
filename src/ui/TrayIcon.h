@@ -25,6 +25,10 @@ public:
     // Shows a notification. Does nothing on macOS.
     void showWarning(const QString &title, const QString &text);
 
+    // Shows or removes the Dock icon while the window is shown or hidden in the menu bar.
+    // Showing it also brings favdir to the front. Does nothing outside macOS.
+    void setDockIconVisible(bool visible);
+
 signals:
     // A left click. Not emitted on macOS, where any click opens the menu.
     void triggered();

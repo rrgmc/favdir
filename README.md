@@ -14,8 +14,11 @@ tool you need with one click or one key. It runs on Windows and macOS.
   `{path}` and `{name}` are replaced by the folder's path and name. Actions come from a
   shared library, either on all folders or added to chosen ones, or belong to a single
   folder.
-- Closing the window keeps favdir in the system tray (the menu bar on macOS). A **global
-  hotkey** shows or hides it from any application.
+- Closing the window keeps favdir in the system tray (the menu bar on macOS, where it also
+  leaves the Dock until the window shows again). A **global hotkey** shows or hides it from
+  any application.
+- Settings can **start favdir when you sign in** (on macOS 13 and later). It then starts
+  hidden in the tray or menu bar.
 
 ## Keyboard
 
@@ -190,7 +193,7 @@ cpack -C Release
 
 The setup installs favdir with the Qt and Visual C++ runtime libraries it needs, adds a Start
 menu entry, and on its last page offers to start favdir when you sign in. favdir then starts
-hidden in the tray (`favdir --hidden`).
+hidden in the tray (`favdir --hidden`). The same option is in favdir's Settings.
 
 ### macOS disk image
 

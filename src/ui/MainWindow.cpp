@@ -3,6 +3,7 @@
 #include "ActionsDialog.h"
 #include "FolderDialog.h"
 #include "Icons.h"
+#include "LoginItem.h"
 #include "PriorityBoard.h"
 #include "SettingsDialog.h"
 #include "TrayIcon.h"
@@ -281,6 +282,12 @@ void MainWindow::createTray()
     menu->addAction(tr("Quit"), qApp, &QApplication::quit);
     m_tray = new TrayIcon(Icons::trayIcon(), QStringLiteral("favdir"), menu, this);
     connect(m_tray, &TrayIcon::triggered, this, &MainWindow::toggleVisible);
+    // Started hidden at sign-in: favdir lives only in the tray. Checked once main() has had the
+    // chance to show the window.
+    QTimer::singleShot(0, this, [this] {
+        if (!isVisible())
+            m_tray->setDockIconVisible(false);
+    });
 }
 
 PriorityBoard *MainWindow::currentBoard() const
@@ -339,6 +346,8 @@ void MainWindow::updateTabTitles()
 
 void MainWindow::showAndFocus()
 {
+    if (m_tray)
+        m_tray->setDockIconVisible(true);
     if (isMinimized())
         showNormal();
     else
@@ -366,9 +375,10 @@ void MainWindow::toggleVisible()
 void MainWindow::hideWindow()
 {
     saveGeometryState();
-    if (m_tray)
+    if (m_tray) {
         hide();
-    else
+        m_tray->setDockIconVisible(false);
+    } else
         showMinimized();
 }
 
@@ -569,8 +579,26 @@ void MainWindow::editActions()
 void MainWindow::editSettings()
 {
     SettingsDialog dialog(m_store->settings(), m_hotkeyError, m_tray != nullptr, this);
-    if (dialog.exec() == QDialog::Accepted)
-        m_store->setSettings(dialog.settings());
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+    m_store->setSettings(dialog.settings());
+
+    if (!LoginItem::isSupported() || dialog.startAtSignIn() == LoginItem::isEnabled())
+        return;
+    QString error;
+    if (!LoginItem::setEnabled(dialog.startAtSignIn(), &error)) {
+        QMessageBox::warning(this, tr("Settings"),
+                             tr("favdir could not change whether it starts at sign-in: %1")
+                                 .arg(error));
+    } else if (LoginItem::needsApproval()) {
+        const auto answer = QMessageBox::information(
+            this, tr("Settings"),
+            tr("macOS starts favdir at sign-in only after you allow it in System Settings > "
+               "General > Login Items. Open System Settings now?"),
+            QMessageBox::Open | QMessageBox::Cancel, QMessageBox::Open);
+        if (answer == QMessageBox::Open)
+            LoginItem::openSystemSettings();
+    }
 }
 
 void MainWindow::showContextMenu(const QUuid &id, const QPoint &globalPos)

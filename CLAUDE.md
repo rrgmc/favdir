@@ -67,6 +67,14 @@ actions on them. `README.md` describes the features and the build for users.
   uses a native `NSStatusItem` instead of `QSystemTrayIcon`, which aborts when clicked (fixed in
   Qt 6.12). `Icons::toolIcon` draws the toolbar icons instead of using `QIcon::fromTheme`, whose
   SF Symbols drawing aborts. Check both after upgrading Qt.
+- On macOS, hiding the window to the menu bar makes favdir an accessory app (no Dock icon) and
+  showing it makes it a regular app again, through `TrayIcon::setDockIconVisible`.
+- "Start favdir when I sign in" lives in the OS, not in the JSON file: the per-user Run key on
+  Windows (the same value the installer writes) and `SMAppService.mainApp` on macOS
+  (`LoginItem`). macOS passes no `--hidden`, so `LoginItem::whenLaunched` reads the
+  login-item flag from the launch Apple event. Dock clicks show the window through the reopen
+  Apple event (`MacApp::whenReopened`), not Qt's `ApplicationActive`, which launching also
+  sends.
 - Qt 6.8's macOS style draws no check boxes in item views on macOS 27. `ItemCheckStyle::apply`
   gives a view a style that paints them in code; use it on every view with checkable items.
 

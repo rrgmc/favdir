@@ -126,3 +126,21 @@ void TrayIcon::showWarning(const QString &, const QString &)
     // Qt 6.8 used the deprecated NSUserNotificationCenter here. The status bar still shows the
     // message.
 }
+
+void TrayIcon::setDockIconVisible(bool visible)
+{
+    // An accessory app has no Dock icon and no menu bar, like a menu bar app.
+    const NSApplicationActivationPolicy policy = visible
+                                                     ? NSApplicationActivationPolicyRegular
+                                                     : NSApplicationActivationPolicyAccessory;
+    if (NSApp.activationPolicy == policy)
+        return;
+    [NSApp setActivationPolicy:policy];
+    // An app that was an accessory does not come to the front by itself.
+    if (visible) {
+        if (@available(macOS 14, *))
+            [NSApp activate];
+        else
+            [NSApp activateIgnoringOtherApps:YES];
+    }
+}
