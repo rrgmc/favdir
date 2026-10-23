@@ -213,6 +213,7 @@ ActionTableEditor::ActionTableEditor(Mode mode, QWidget *parent)
 QString ActionTableEditor::helpText()
 {
     return tr("<b>{path}</b> is replaced by the folder path and <b>{name}</b> by its name. "
+              "<b>{path:url}</b> and <b>{name:url}</b> insert them URL-encoded, for links. "
               "Use the quotes the command needs, for example <code>code \"{path}\"</code>. "
               "The command <b>@open</b> opens the folder in the file manager. "
               "<b>Shell</b> runs the command through cmd (Windows) or sh (macOS), which "
