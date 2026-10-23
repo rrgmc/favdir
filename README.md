@@ -93,12 +93,14 @@ Examples that use URL-encoded placeholders:
 
 | Name | Windows command | macOS command |
 |---|---|---|
-| Open in Claude Desktop | `explorer "claude://code/new?folder={path:url}"` | `open "claude://code/new?folder={path:url}"` |
-| Search the folder name | `explorer "https://www.google.com/search?q={name:url}"` | `open "https://www.google.com/search?q={name:url}"` |
+| Open in Claude Desktop | `rundll32 url.dll,FileProtocolHandler "claude://code/new?folder={path:url}"` | `open "claude://code/new?folder={path:url}"` |
+| Search the folder name | `rundll32 url.dll,FileProtocolHandler "https://www.google.com/search?q={name:url}"` | `open "https://www.google.com/search?q={name:url}"` |
 
-On Windows, use `explorer` to open a link, without **Shell**. It starts the link's app without
-a console window. Avoid `cmd /c start` with **Shell**: `cmd` treats text between two `%` signs
-as an environment variable and can change the encoded link.
+On Windows, open a link with `rundll32 url.dll,FileProtocolHandler`, without **Shell**. It
+starts the link's app without a console window, including apps installed from the Microsoft
+Store, such as Claude Desktop. Do not use `explorer`, which opens a File Explorer window
+instead of Store apps' links. Avoid `cmd /c start` with **Shell**: `cmd` treats text between
+two `%` signs as an environment variable and can change the encoded link.
 
 On Windows, commands get the environment variables as they are set in Windows when the action
 runs. A change to `PATH` therefore takes effect without restarting favdir.
