@@ -26,6 +26,12 @@ bool hasITerm();
 Action iTerm();
 Action iTermRunning(const QString &command);
 
+// Opens `url` with the app registered for it: `open` on macOS, and on Windows
+// `rundll32 url.dll,FileProtocolHandler`, which also reaches Microsoft Store apps and shows no
+// console. The URL may contain placeholders, such as `{path:url}`. Double quotes in it are
+// percent-encoded so that they cannot end the quoted argument.
+Action openLink(const QString &url);
+
 // Runs `command` through the shell in the folder, without a window.
 Action background(const QString &command);
 

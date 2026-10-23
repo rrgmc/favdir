@@ -260,6 +260,7 @@ private slots:
             ActionTemplates::terminal(),
             ActionTemplates::terminalRunning(QStringLiteral("claude --resume")),
             ActionTemplates::background(QStringLiteral("./build.sh")),
+            ActionTemplates::openLink(QStringLiteral("claude://code/new?folder={path:url}")),
             ActionTemplates::iTerm(),
             ActionTemplates::iTermRunning(QStringLiteral("claude")),
         };
@@ -324,6 +325,45 @@ private slots:
                                 "-e 'set w to (create window with default profile)' "
                                 "-e 'tell current session of w to write text "
                                 "\"cd \\\"{path}\\\" && claude\"' -e 'end tell'"));
+    }
+
+    void openLinkCommand()
+    {
+        const Action a =
+            ActionTemplates::openLink(QStringLiteral(" claude://code/new?folder={path:url} "));
+        QCOMPARE(a.name, QStringLiteral("Open claude://code"));
+        QVERIFY(!a.shell);
+#if defined(Q_OS_WIN)
+        QCOMPARE(a.command, QStringLiteral("rundll32 url.dll,FileProtocolHandler "
+                                           "\"claude://code/new?folder={path:url}\""));
+#else
+        QCOMPARE(a.command, QStringLiteral("open \"claude://code/new?folder={path:url}\""));
+#endif
+
+        Folder f;
+        f.path = QStringLiteral("/work/my repo");
+        const auto inv = ActionRunner::prepare(a, f);
+        QVERIFY(inv);
+        const QString url = QStringLiteral("claude://code/new?folder=")
+                            + QString::fromLatin1(QUrl::toPercentEncoding(
+                                QDir::toNativeSeparators(f.path)));
+#if defined(Q_OS_WIN)
+        QCOMPARE(inv->program, QStringLiteral("rundll32"));
+        QCOMPARE(inv->arguments,
+                 (QStringList{QStringLiteral("url.dll,FileProtocolHandler"), url}));
+#else
+        QCOMPARE(inv->program, QStringLiteral("open"));
+        QCOMPARE(inv->arguments, (QStringList{url}));
+#endif
+    }
+
+    void openLinkEncodesQuotes()
+    {
+        const Action a = ActionTemplates::openLink(QStringLiteral("x:\"a\""));
+        QVERIFY(a.command.endsWith(QLatin1String("\"x:%22a%22\"")));
+        const auto inv = ActionRunner::prepare(a, Folder{});
+        QVERIFY(inv);
+        QCOMPARE(inv->arguments.last(), QStringLiteral("x:%22a%22"));
     }
 
     void backgroundUsesShell()

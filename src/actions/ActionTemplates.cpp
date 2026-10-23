@@ -6,6 +6,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QStringList>
+#include <QUrl>
 
 namespace ActionTemplates {
 
@@ -113,6 +114,23 @@ Action iTermRunning(const QString &command)
                                + cdAndRun(trimmed),
                            QStringLiteral("end tell")}),
                 true);
+}
+
+Action openLink(const QString &url)
+{
+    QString quoted = url.trimmed();
+    quoted.replace(QLatin1Char('"'), QLatin1String("%22"));
+    // The name shows what the link opens, such as "Open claude://code".
+    const QUrl parsed(quoted);
+    QString name = quoted;
+    if (!parsed.scheme().isEmpty() && !parsed.host().isEmpty())
+        name = parsed.scheme() + QLatin1String("://") + parsed.host();
+    name = QCoreApplication::translate("ActionTemplates", "Open %1").arg(name);
+#if defined(Q_OS_WIN)
+    return make(name, QStringLiteral(R"(rundll32 url.dll,FileProtocolHandler "%1")").arg(quoted));
+#else
+    return make(name, QStringLiteral(R"(open "%1")").arg(quoted));
+#endif
 }
 
 Action background(const QString &command)
