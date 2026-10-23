@@ -168,6 +168,15 @@ ActionTableEditor::ActionTableEditor(Mode mode, QWidget *parent)
                 appendAndEdit(ActionTemplates::iTermRunning(command));
         });
     }
+    addMenu->addAction(tr("Open a &link..."), this, [this] {
+        const QString url = askCommand(
+            tr("Open a link"),
+            tr("Link to open with the app registered for it, for example "
+               "<code>claude://code/new?folder={path:url}</code>. "
+               "<b>{path:url}</b> and <b>{name:url}</b> insert the folder URL-encoded."));
+        if (!url.isEmpty())
+            appendAndEdit(ActionTemplates::openLink(url));
+    });
     addMenu->addAction(tr("Run a command in the &background..."), this, [this] {
         const QString command = askCommand(
             tr("Run a command in the background"),
@@ -218,7 +227,7 @@ QString ActionTableEditor::helpText()
               "The command <b>@open</b> opens the folder in the file manager. "
               "<b>Shell</b> runs the command through cmd (Windows) or sh (macOS), which "
               "allows scripts, pipes and &amp;&amp;. Commands start in the folder. "
-              "The <b>Add</b> menu has templates for applications and terminals.");
+              "The <b>Add</b> menu has templates for applications, terminals and links.");
 }
 
 void ActionTableEditor::appendAndEdit(const Action &action)

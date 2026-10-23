@@ -96,7 +96,8 @@ Examples that use URL-encoded placeholders:
 | Open in Claude Desktop | `rundll32 url.dll,FileProtocolHandler "claude://code/new?folder={path:url}"` | `open "claude://code/new?folder={path:url}"` |
 | Search the folder name | `rundll32 url.dll,FileProtocolHandler "https://www.google.com/search?q={name:url}"` | `open "https://www.google.com/search?q={name:url}"` |
 
-On Windows, open a link with `rundll32 url.dll,FileProtocolHandler`, without **Shell**. It
+The **Open a link** template in the **Add** menu writes these commands. On Windows, open a
+link with `rundll32 url.dll,FileProtocolHandler`, without **Shell**. It
 starts the link's app without a console window, including apps installed from the Microsoft
 Store, such as Claude Desktop. Do not use `explorer`, which opens a File Explorer window
 instead of Store apps' links. Avoid `cmd /c start` with **Shell**: `cmd` treats text between
@@ -117,6 +118,9 @@ it needs and fills in an ordinary action, which you can then edit:
   command for Terminal.
 - **iTerm in folder** and **iTerm running a command**: the same for iTerm2, shown on macOS
   when iTerm2 is in `/Applications` or `~/Applications`.
+- **Open a link**: opens a link with the app registered for it, such as
+  `claude://code/new?folder={path:url}` for Claude Desktop. On Windows this writes
+  `rundll32 url.dll,FileProtocolHandler "<link>"`; on macOS, `open "<link>"`.
 - **Run a command in the background**: a **Shell** command with no window, such as
   `./build.sh`.
 
