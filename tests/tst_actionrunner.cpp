@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QTemporaryDir>
 #include <QTest>
+#include <QUrl>
 
 class TestActionRunner : public QObject
 {
@@ -19,6 +20,101 @@ private slots:
         const QString native = QDir::toNativeSeparators(f.path);
         QCOMPARE(ActionRunner::expand(QStringLiteral("x \"{path}\" {name} {path}"), f),
                  QStringLiteral("x \"%1\" repo %1").arg(native));
+    }
+
+    void expandUrlPlainPath()
+    {
+        Folder f;
+        f.path = QStringLiteral("/work/repo");
+#ifdef Q_OS_WIN
+        const QString encoded = QStringLiteral("%5Cwork%5Crepo");
+#else
+        const QString encoded = QStringLiteral("%2Fwork%2Frepo");
+#endif
+        QCOMPARE(ActionRunner::expand(QStringLiteral("x?folder={path:url}"), f),
+                 QStringLiteral("x?folder=") + encoded);
+    }
+
+    void expandUrlSpaces()
+    {
+        Folder f;
+        f.name = QStringLiteral("my repo");
+        f.path = QStringLiteral("/work/my repo");
+        QCOMPARE(ActionRunner::expand(QStringLiteral("{name:url}"), f), QStringLiteral("my%20repo"));
+        QVERIFY(ActionRunner::expand(QStringLiteral("{path:url}"), f)
+                    .endsWith(QLatin1String("my%20repo")));
+    }
+
+    void expandUrlNonAscii()
+    {
+        Folder f;
+        f.name = QStringLiteral("S\u00e3o Paulo");
+        f.path = QStringLiteral("/S\u00e3o Paulo");
+        QCOMPARE(ActionRunner::expand(QStringLiteral("{name:url}"), f),
+                 QStringLiteral("S%C3%A3o%20Paulo"));
+#ifdef Q_OS_WIN
+        QCOMPARE(ActionRunner::expand(QStringLiteral("{path:url}"), f),
+                 QStringLiteral("%5CS%C3%A3o%20Paulo"));
+#else
+        QCOMPARE(ActionRunner::expand(QStringLiteral("{path:url}"), f),
+                 QStringLiteral("%2FS%C3%A3o%20Paulo"));
+#endif
+    }
+
+    void expandUrlWindowsPath()
+    {
+        Folder f;
+        f.path = QStringLiteral("C:/Users/me/my repo");
+#ifdef Q_OS_WIN
+        const QString encoded = QStringLiteral("C%3A%5CUsers%5Cme%5Cmy%20repo");
+#else
+        const QString encoded = QStringLiteral("C%3A%2FUsers%2Fme%2Fmy%20repo");
+#endif
+        QCOMPARE(ActionRunner::expand(QStringLiteral("{path:url}"), f), encoded);
+    }
+
+    void expandUrlBackslashes()
+    {
+        Folder f;
+        f.name = QStringLiteral("C:\\a b\\c~d-e_f.g");
+        QCOMPARE(ActionRunner::expand(QStringLiteral("{name:url}"), f),
+                 QStringLiteral("C%3A%5Ca%20b%5Cc~d-e_f.g"));
+    }
+
+    void expandDoesNotReexpand()
+    {
+        Folder f;
+        f.name = QStringLiteral("{path}");
+        f.path = QStringLiteral("/work/{name}");
+        const QString native = QDir::toNativeSeparators(f.path);
+        QCOMPARE(ActionRunner::expand(QStringLiteral("{name}"), f), QStringLiteral("{path}"));
+        QCOMPARE(ActionRunner::expand(QStringLiteral("{path}"), f), native);
+        QCOMPARE(ActionRunner::expand(QStringLiteral("{name} {path}"), f),
+                 QStringLiteral("{path} ") + native);
+        QCOMPARE(ActionRunner::expand(QStringLiteral("{name:url}"), f),
+                 QStringLiteral("%7Bpath%7D"));
+    }
+
+    void expandKeepsUnknownPlaceholders()
+    {
+        Folder f;
+        f.name = QStringLiteral("n");
+        QCOMPARE(ActionRunner::expand(QStringLiteral("{foo} {path:bar} {name:URL} {name}"), f),
+                 QStringLiteral("{foo} {path:bar} {name:URL} n"));
+    }
+
+    void prepareUrlPlaceholder()
+    {
+        Folder f;
+        f.path = QStringLiteral("/work/my repo");
+        const Action a{QUuid::createUuid(), QStringLiteral("u"),
+                       QStringLiteral("open \"x://y?f={path:url}\""), false};
+        const auto inv = ActionRunner::prepare(a, f);
+        QVERIFY(inv);
+        QCOMPARE(inv->program, QStringLiteral("open"));
+        const QString encoded = QString::fromLatin1(
+            QUrl::toPercentEncoding(QDir::toNativeSeparators(f.path)));
+        QCOMPARE(inv->arguments, (QStringList{QStringLiteral("x://y?f=") + encoded}));
     }
 
     void prepareSplitsCommand()
