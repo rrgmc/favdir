@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QProcess>
+#include <QRegularExpression>
 #include <QStandardPaths>
 #include <QTemporaryFile>
 #include <QUrl>
@@ -110,9 +111,21 @@ QProcessEnvironment environmentForActions()
 
 QString expand(const QString &command, const Folder &folder)
 {
-    QString result = command;
-    result.replace(QLatin1String("{path}"), QDir::toNativeSeparators(folder.path));
-    result.replace(QLatin1String("{name}"), folder.name);
+    static const QRegularExpression placeholder(QStringLiteral(R"(\{(path|name)(:url)?\})"));
+
+    QString result;
+    qsizetype last = 0;
+    for (const QRegularExpressionMatch &match : placeholder.globalMatch(command)) {
+        result += QStringView(command).mid(last, match.capturedStart() - last);
+        QString value = match.capturedView(1) == QLatin1String("path")
+                            ? QDir::toNativeSeparators(folder.path)
+                            : folder.name;
+        if (match.hasCaptured(2))
+            value = QString::fromLatin1(QUrl::toPercentEncoding(value));
+        result += value;
+        last = match.capturedEnd();
+    }
+    result += QStringView(command).mid(last);
     return result;
 }
 

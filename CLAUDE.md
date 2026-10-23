@@ -32,8 +32,9 @@ actions on them. `README.md` describes the features and the build for users.
 
 - `src/model`: `Action`, `Folder`, `FolderStore` (JSON persistence, debounced atomic saves),
   `SectionModel` (one priority section of one tab, with filter and drag and drop). No widgets.
-- `src/actions`: `ActionRunner` (expands `{path}`/`{name}`, starts detached processes) and
-  `DefaultActions` (first-run actions and default hotkey, per platform).
+- `src/actions`: `ActionRunner` (expands `{path}`/`{name}` and their `:url` forms, starts
+  detached processes) and `DefaultActions` (first-run actions and default hotkey, per
+  platform).
 - `src/ui`: widgets. `MainWindow` holds two `PriorityBoard`s (Active, Inactive), each with three
   `SectionView`s painted by `FolderDelegate`.
 - `src/platform`: `GlobalHotkey` (`RegisterHotKey` on Windows, Carbon on macOS, one

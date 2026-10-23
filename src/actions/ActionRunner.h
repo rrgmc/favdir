@@ -24,7 +24,10 @@ struct Invocation
     QString workingDirectory;
 };
 
-// Replaces {path} and {name} in a command template.
+// Replaces {path} and {name} in a command template. {path:url} and {name:url} insert the value
+// percent-encoded as a URL query component: every UTF-8 byte except A-Z a-z 0-9 - . _ ~ is
+// encoded. The command is read once from left to right, so a value that contains a placeholder
+// is inserted as it is, not expanded again. Other text in braces is left alone.
 QString expand(const QString &command, const Folder &folder);
 
 // Turns an action into an invocation. Returns nullopt and sets `error` when the command is
