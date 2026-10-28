@@ -169,6 +169,10 @@ testing.
    `.qt/` with [aqtinstall](https://github.com/miurahr/aqtinstall). It needs no Qt account and
    runs only once.
 
+   To share one Qt between projects, set the `QT_ROOT` environment variable to a folder in
+   aqtinstall's layout (`<root>/6.8.3/msvc2022_64` or `<root>/6.8.3/macos`) before you run the
+   script and configure. The script then uses Qt from there, or downloads it there.
+
    ```sh
    scripts/setup.ps1     # Windows (PowerShell)
    sh scripts/setup.sh   # macOS
