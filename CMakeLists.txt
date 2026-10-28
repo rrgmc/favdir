@@ -8,6 +8,18 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+# The presets name Qt's folder below a root in aqtinstall's layout, for example
+# 6.8.3/msvc2022_64. The root is the QT_ROOT environment variable, for a Qt folder that several
+# projects share, or else .qt/ in the repository. scripts/setup.* download Qt into the same root.
+if(FAVDIR_QT_SUBDIR)
+    if(NOT "$ENV{QT_ROOT}" STREQUAL "")
+        file(TO_CMAKE_PATH "$ENV{QT_ROOT}" favdir_qt_root)
+    else()
+        set(favdir_qt_root "${CMAKE_SOURCE_DIR}/.qt")
+    endif()
+    list(PREPEND CMAKE_PREFIX_PATH "${favdir_qt_root}/${FAVDIR_QT_SUBDIR}")
+endif()
+
 find_package(Qt6 6.8 REQUIRED COMPONENTS Widgets Network Test)
 qt_standard_project_setup()
 

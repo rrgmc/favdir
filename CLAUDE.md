@@ -5,9 +5,12 @@ actions on them. `README.md` describes the features and the build for users.
 
 ## Build and test
 
-- Qt is a prebuilt download in `.qt/` (gitignored), fetched by `scripts/setup.ps1` or
-  `scripts/setup.sh`. The Qt version is pinned in both scripts and in `CMakePresets.json`;
-  change all three together.
+- Qt is a prebuilt download, fetched by `scripts/setup.ps1` or `scripts/setup.sh` into the
+  folder named by the `QT_ROOT` environment variable (a Qt folder shared between projects), or
+  else into `.qt/` (gitignored). The presets give the folder below that root
+  (`FAVDIR_QT_SUBDIR`) and `CMakeLists.txt` adds the root. The Qt version is pinned in both
+  scripts and in `CMakePresets.json`; change all three together. CMake caches the Qt it found,
+  so configure with `--fresh` after changing `QT_ROOT`.
 - Presets:
   - `windows`: Visual Studio 2022 generator. Use it for local work.
   - `windows-ninja`: Ninja Multi-Config with whatever MSVC is in the environment. CI and the

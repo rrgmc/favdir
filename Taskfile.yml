@@ -18,7 +18,7 @@ tasks:
     silent: true
 
   setup:
-    desc: Download the prebuilt Qt into .qt/ (needs uv)
+    desc: Download the prebuilt Qt into $QT_ROOT or .qt/ (needs uv)
     cmds:
       - cmd: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup.ps1
         platforms: [windows]
