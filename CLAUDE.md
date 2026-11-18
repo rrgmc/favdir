@@ -65,12 +65,11 @@ actions on them. `README.md` describes the features and the build for users.
   with made-up data by the `make_screenshot` target, each on its own platform. Regenerate them
   after visible changes to the main window. On macOS the tool captures the real window with
   `screencapture`, which needs the Screen Recording permission.
-- `CMakeLists.txt` drops the AGL framework from Qt's OpenGL target on macOS (Xcode 26 no
-  longer ships it). Remove the workaround when moving to a Qt version that no longer links AGL.
-- Qt 6.8 crashes on macOS 27 in two places, so favdir works around both on macOS. `TrayIcon`
-  uses a native `NSStatusItem` instead of `QSystemTrayIcon`, which aborts when clicked (fixed in
-  Qt 6.12). `Icons::toolIcon` draws the toolbar icons instead of using `QIcon::fromTheme`, whose
-  SF Symbols drawing aborts. Check both after upgrading Qt.
+- Qt 6.8 crashed on macOS 27 in two places, and favdir keeps both workarounds with Qt 6.10.
+  `TrayIcon` uses a native `NSStatusItem` instead of `QSystemTrayIcon`, which aborts when
+  clicked (fixed in Qt 6.12). `Icons::toolIcon` draws the toolbar icons instead of using
+  `QIcon::fromTheme`, whose SF Symbols drawing aborts (not yet checked with Qt 6.10). Check both
+  after upgrading Qt.
 - On macOS, hiding the window to the menu bar makes favdir an accessory app (no Dock icon) and
   showing it makes it a regular app again, through `TrayIcon::setDockIconVisible`.
 - "Start favdir when I sign in" lives in the OS, not in the JSON file: the per-user Run key on
@@ -79,8 +78,14 @@ actions on them. `README.md` describes the features and the build for users.
   login-item flag from the launch Apple event. Dock clicks show the window through the reopen
   Apple event (`MacApp::whenReopened`), not Qt's `ApplicationActive`, which launching also
   sends.
-- Qt 6.8's macOS style draws no check boxes in item views on macOS 27. `ItemCheckStyle::apply`
-  gives a view a style that paints them in code; use it on every view with checkable items.
+- Dialogs run with `exec()` sit at AppKit's modal panel level, above every other app and the
+  Screenshot controls, and Qt (6.8 to 6.10) leaves them there. `MacApp::attachModalDialogs`
+  keeps each modal dialog at the normal level and attaches it to its owner window as a child
+  window. It never calls `winId()` on a widget without a window handle, so native file dialogs
+  keep no native window of their own.
+- Qt's macOS style (6.8 to 6.10) draws no usable check boxes in item views on macOS 27, at most
+  a misplaced one on the first row. `ItemCheckStyle::apply` gives a view a style that paints them
+  in code instead; use it on every view with checkable items.
 
 ## Packaging and releases
 

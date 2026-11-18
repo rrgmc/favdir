@@ -5,7 +5,7 @@
 
 set -eu
 
-QT_VERSION=6.8.3
+QT_VERSION=6.10.3
 QT_ARCH=clang_64
 QT_ARCH_DIR=macos
 

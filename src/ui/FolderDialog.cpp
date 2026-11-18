@@ -34,7 +34,6 @@ FolderDialog::FolderDialog(const FolderStore *store, const Folder &folder, QWidg
     , m_customActions(new ActionTableEditor(ActionTableEditor::Mode::Folder, this))
 {
     setWindowTitle(tr("Edit folder"));
-    resize(640, 520);
 
     auto *browse = new QPushButton(tr("&Browse…"), this);
     connect(browse, &QPushButton::clicked, this, [this] {
@@ -51,8 +50,13 @@ FolderDialog::FolderDialog(const FolderStore *store, const Folder &folder, QWidg
     pathRow->addWidget(browse);
 
     auto *form = new QFormLayout;
+    // macOS keeps fields at their size hint by default, which leaves the text fields narrow.
+    form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
     form->addRow(tr("&Name:"), m_name);
-    form->addRow(tr("&Path:"), pathRow);
+    // A row given a layout gets no buddy, and the label would show its '&'.
+    auto *pathLabel = new QLabel(tr("&Path:"), this);
+    pathLabel->setBuddy(m_path);
+    form->addRow(pathLabel, pathRow);
 
     for (const Action &a : store->actions()) {
         const QString label = a.allFolders ? a.name : tr("%1 (optional)").arg(a.name);
@@ -85,6 +89,11 @@ FolderDialog::FolderDialog(const FolderStore *store, const Folder &folder, QWidg
     layout->addWidget(globalBox);
     layout->addWidget(customBox, 1);
     layout->addWidget(buttons);
+
+    // The wrapped help text makes the height depend on the width, which the layout's minimum
+    // size does not cover, so a fixed height can squeeze the action table's buttons.
+    constexpr int width = 640;
+    resize(width, std::max(520, layout->totalHeightForWidth(width)));
 }
 
 Folder FolderDialog::folder() const

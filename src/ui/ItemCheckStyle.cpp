@@ -9,20 +9,20 @@
 #include <QStyleOptionViewItem>
 
 namespace {
-// Draws the item check box after the macOS style has drawn the rest of the item. The style
-// leaves room for the check box but does not draw it.
+// Draws the item check boxes in code. The macOS style reserves room for them, but AppKit draws
+// at most a misplaced box on the first row, so it must not draw them at all.
 class Style : public QProxyStyle
 {
 public:
-    void drawControl(ControlElement element, const QStyleOption *option, QPainter *painter,
-                     const QWidget *widget) const override
+    void drawPrimitive(PrimitiveElement element, const QStyleOption *option, QPainter *painter,
+                       const QWidget *widget) const override
     {
-        QProxyStyle::drawControl(element, option, painter, widget);
         const auto *item = qstyleoption_cast<const QStyleOptionViewItem *>(option);
-        if (element != CE_ItemViewItem || !item
-            || !(item->features & QStyleOptionViewItem::HasCheckIndicator))
+        if (element == PE_IndicatorItemViewItemCheck && item) {
+            drawCheck(*item, option->rect, painter);
             return;
-        drawCheck(*item, subElementRect(SE_ItemViewItemCheckIndicator, item, widget), painter);
+        }
+        QProxyStyle::drawPrimitive(element, option, painter, widget);
     }
 
 private:

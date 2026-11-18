@@ -10,4 +10,10 @@ namespace MacApp {
 // trigger it, so a hidden start stays hidden.
 void whenReopened(std::function<void()> callback);
 
+// Keeps modal dialogs from floating over other apps and the Screenshot controls. AppKit puts a
+// dialog run with exec() at the modal panel level, above every other app. Each modal dialog is
+// kept at the normal level instead, and attached to its owner window as a child window, so it
+// stays directly above that window. Call once, after the QApplication exists.
+void attachModalDialogs();
+
 } // namespace MacApp

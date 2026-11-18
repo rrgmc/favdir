@@ -30,7 +30,12 @@ SettingsDialog::SettingsDialog(const Settings &settings, const QString &hotkeyEr
     hotkeyRow->addWidget(clear);
 
     auto *form = new QFormLayout;
-    form->addRow(tr("Global &hotkey:"), hotkeyRow);
+    // macOS keeps fields at their size hint by default, which leaves the text fields narrow.
+    form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
+    // A row given a layout gets no buddy, and the label would show its '&'.
+    auto *hotkeyLabel = new QLabel(tr("Global &hotkey:"), this);
+    hotkeyLabel->setBuddy(m_hotkey);
+    form->addRow(hotkeyLabel, hotkeyRow);
     if (!hotkeyError.isEmpty()) {
         auto *error = new QLabel(hotkeyError, this);
         error->setWordWrap(true);

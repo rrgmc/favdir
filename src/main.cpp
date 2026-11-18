@@ -79,6 +79,7 @@ int main(int argc, char *argv[])
         if (!window.isVisible())
             window.showAndFocus();
     });
+    MacApp::attachModalDialogs();
 #endif
 
     // Starting at sign-in keeps favdir in the tray until it is called. Windows passes --hidden;

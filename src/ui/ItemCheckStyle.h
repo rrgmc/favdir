@@ -4,9 +4,9 @@ class QAbstractItemView;
 
 namespace ItemCheckStyle {
 
-// Makes the check boxes in the view's items visible. Qt 6.8's macOS style draws them with
-// AppKit, which draws nothing on macOS 27, so on macOS the view gets a style that paints them in
-// code. Elsewhere this does nothing.
+// Makes the check boxes in the view's items visible. Qt's macOS style (6.8 to 6.10) draws them
+// with AppKit, which on macOS 27 draws at most a misplaced box on the first row, so on macOS the
+// view gets a style that paints them in code. Elsewhere this does nothing.
 void apply(QAbstractItemView *view);
 
 } // namespace ItemCheckStyle
