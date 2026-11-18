@@ -7,7 +7,54 @@ on:
   pull_request:
 
 jobs:
+  # Decides whether the change touches anything besides documentation.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: diff
+        shell: bash
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          BEFORE: ${{ github.event.before }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          # Compare with the pull request's base, the previous tip of the pushed branch, or, for
+          # a new branch, where it left the default branch. With no usable base, build anyway.
+          base=""
+          if [ "$EVENT" = pull_request ]; then
+            base="$PR_BASE"
+          elif [ -n "$BEFORE" ] && [ "$BEFORE" != 0000000000000000000000000000000000000000 ] \
+              && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            base="$BEFORE"
+          else
+            base=$(git merge-base "origin/$DEFAULT_BRANCH" HEAD 2>/dev/null || true)
+          fi
+
+          code=true
+          if [ -n "$base" ]; then
+            code=false
+            while IFS= read -r file; do
+              case "$file" in
+                "") ;;
+                *.md | docs/* | LICENSE) ;;
+                *) code=true ;;
+              esac
+            done < <(git diff --name-only "$base" HEAD)
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "Code changed: $code"
+
   build:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -64,3 +111,20 @@ jobs:
         with:
           name: favdir-${{ matrix.preset }}
           path: dist
+
+  # The one check branch protection requires. It passes when the build passed, or was skipped
+  # because only documentation changed, so the matrix can change without touching protection.
+  ci:
+    needs: [changes, build]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          CHANGES: ${{ needs.changes.result }}
+          BUILD: ${{ needs.build.result }}
+        run: |
+          echo "changes: $CHANGES, build: $BUILD"
+          case "$CHANGES/$BUILD" in
+            success/success | success/skipped) ;;
+            *) exit 1 ;;
+          esac
