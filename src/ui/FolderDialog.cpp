@@ -51,8 +51,13 @@ FolderDialog::FolderDialog(const FolderStore *store, const Folder &folder, QWidg
     pathRow->addWidget(browse);
 
     auto *form = new QFormLayout;
+    // macOS keeps fields at their size hint by default, which leaves the text fields narrow.
+    form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
     form->addRow(tr("&Name:"), m_name);
-    form->addRow(tr("&Path:"), pathRow);
+    // A row given a layout gets no buddy, and the label would show its '&'.
+    auto *pathLabel = new QLabel(tr("&Path:"), this);
+    pathLabel->setBuddy(m_path);
+    form->addRow(pathLabel, pathRow);
 
     for (const Action &a : store->actions()) {
         const QString label = a.allFolders ? a.name : tr("%1 (optional)").arg(a.name);
