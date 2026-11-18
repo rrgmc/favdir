@@ -78,6 +78,11 @@ actions on them. `README.md` describes the features and the build for users.
   login-item flag from the launch Apple event. Dock clicks show the window through the reopen
   Apple event (`MacApp::whenReopened`), not Qt's `ApplicationActive`, which launching also
   sends.
+- Dialogs run with `exec()` sit at AppKit's modal panel level, above every other app and the
+  Screenshot controls, and Qt (6.8 to 6.10) leaves them there. `MacApp::attachModalDialogs`
+  keeps each modal dialog at the normal level and attaches it to its owner window as a child
+  window. It never calls `winId()` on a widget without a window handle, so native file dialogs
+  keep no native window of their own.
 - Qt 6.8's macOS style drew no check boxes in item views on macOS 27 (not yet checked with Qt
   6.10). `ItemCheckStyle::apply` gives a view a style that paints them in code; use it on every
   view with checkable items.
