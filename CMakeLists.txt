@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # The presets name Qt's folder below a root in aqtinstall's layout, for example
-# 6.8.3/msvc2022_64. The root is the QT_ROOT environment variable, for a Qt folder that several
+# 6.10.3/msvc2022_64. The root is the QT_ROOT environment variable, for a Qt folder that several
 # projects share, or else .qt/ in the repository. scripts/setup.* download Qt into the same root.
 if(FAVDIR_QT_SUBDIR)
     if(NOT "$ENV{QT_ROOT}" STREQUAL "")
@@ -20,16 +20,8 @@ if(FAVDIR_QT_SUBDIR)
     list(PREPEND CMAKE_PREFIX_PATH "${favdir_qt_root}/${FAVDIR_QT_SUBDIR}")
 endif()
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Widgets Network Test)
+find_package(Qt6 6.10 REQUIRED COMPONENTS Widgets Network Test)
 qt_standard_project_setup()
-
-# Qt 6.8's FindWrapOpenGL links the AGL framework, which Xcode 26 no longer ships. Nothing here
-# uses AGL, so drop it.
-if(APPLE AND TARGET WrapOpenGL::WrapOpenGL)
-    get_target_property(_gl_libs WrapOpenGL::WrapOpenGL INTERFACE_LINK_LIBRARIES)
-    list(FILTER _gl_libs EXCLUDE REGEX "AGL")
-    set_target_properties(WrapOpenGL::WrapOpenGL PROPERTIES INTERFACE_LINK_LIBRARIES "${_gl_libs}")
-endif()
 
 # Model and actions, shared by the app and the tests.
 qt_add_library(favdir_core STATIC

@@ -4,7 +4,7 @@
 
 $ErrorActionPreference = 'Stop'
 
-$QtVersion = '6.8.3'
+$QtVersion = '6.10.3'
 $QtArch = 'win64_msvc2022_64'
 $QtArchDir = 'msvc2022_64'
 
