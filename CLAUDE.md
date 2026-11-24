@@ -83,6 +83,10 @@ actions on them. `README.md` describes the features and the build for users.
   keeps each modal dialog at the normal level and attaches it to its owner window as a child
   window. It never calls `winId()` on a widget without a window handle, so native file dialogs
   keep no native window of their own.
+- On Windows, a window hidden to the tray keeps its virtual desktop, so showing it from another
+  desktop left it and its dialogs out of sight. `showAndFocus` moves the window to the desktop
+  of the previous foreground window, and `WinDesktop::keepDialogsWithOwner` moves each dialog
+  that opens on another desktop to its owner's (`IVirtualDesktopManager`).
 - Qt's macOS style (6.8 to 6.10) draws no usable check boxes in item views on macOS 27, at most
   a misplaced one on the first row. `ItemCheckStyle::apply` gives a view a style that paints them
   in code instead; use it on every view with checkable items.

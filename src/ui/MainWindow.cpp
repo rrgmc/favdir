@@ -31,6 +31,8 @@
 #include <QVBoxLayout>
 
 #ifdef Q_OS_WIN
+#include "WinDesktop.h"
+
 #include <windows.h>
 // windows.h maps this to DocumentPropertiesW, which clashes with QIcon::ThemeIcon.
 #undef DocumentProperties
@@ -348,10 +350,20 @@ void MainWindow::showAndFocus()
 {
     if (m_tray)
         m_tray->setDockIconVisible(true);
+#ifdef Q_OS_WIN
+    // The window the user is in, on the virtual desktop they are looking at.
+    const HWND previous = GetForegroundWindow();
+#endif
     if (isMinimized())
         showNormal();
     else
         show();
+#ifdef Q_OS_WIN
+    // A window hidden to the tray stays on the desktop it was hidden from; bring it, and so the
+    // dialogs it owns, to this one.
+    if (previous && previous != reinterpret_cast<HWND>(winId()))
+        WinDesktop::moveToDesktopOf(this, reinterpret_cast<WId>(previous));
+#endif
     raise();
     activateWindow();
     m_filter->setFocus(Qt::ShortcutFocusReason);
