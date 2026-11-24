@@ -30,6 +30,9 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
+#ifdef Q_OS_MACOS
+#include "MacApp.h"
+#endif
 #ifdef Q_OS_WIN
 #include "WinDesktop.h"
 
@@ -358,6 +361,10 @@ void MainWindow::showAndFocus()
     // The window stays on the desktop it was hidden from, or left on; bring it, and so the
     // dialogs it owns, to the one the user is looking at.
     WinDesktop::moveToCurrentDesktop(this);
+#elif defined(Q_OS_MACOS)
+    // The same for Spaces, from the next activation on: AppKit moves a window that is already
+    // on screen, and a hidden one shows on the active Space anyway.
+    MacApp::moveToActiveSpace(this);
 #endif
     raise();
     activateWindow();

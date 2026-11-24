@@ -143,6 +143,16 @@ void whenReopened(std::function<void()> callback)
                 }];
 }
 
+void moveToActiveSpace(QWidget *window)
+{
+    // The offscreen platform used by the tests has no NSWindow behind winId().
+    if (QGuiApplication::platformName() != QLatin1String("cocoa"))
+        return;
+    NSWindow *native = nativeWindow(window);
+    if (native)
+        native.collectionBehavior |= NSWindowCollectionBehaviorMoveToActiveSpace;
+}
+
 void attachModalDialogs()
 {
     qApp->installEventFilter(new DialogFilter(qApp));
