@@ -2,6 +2,8 @@
 
 #include <functional>
 
+class QWidget;
+
 // macOS application events that Qt does not expose.
 namespace MacApp {
 
