@@ -68,7 +68,7 @@ endif()
 if(WIN32)
     target_sources(favdir_ui PRIVATE src/ui/LoginItem_win.cpp src/ui/WinDesktop.h
         src/ui/WinDesktop.cpp)
-    target_link_libraries(favdir_ui PUBLIC Ole32)
+    target_link_libraries(favdir_ui PUBLIC Ole32 Dwmapi)
 elseif(NOT APPLE)
     target_sources(favdir_ui PRIVATE src/ui/LoginItem_none.cpp)
 endif()

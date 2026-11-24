@@ -84,8 +84,9 @@ actions on them. `README.md` describes the features and the build for users.
   window. It never calls `winId()` on a widget without a window handle, so native file dialogs
   keep no native window of their own.
 - On Windows, a window hidden to the tray keeps its virtual desktop, so showing it from another
-  desktop left it and its dialogs out of sight. `showAndFocus` moves the window to the desktop
-  of the previous foreground window, and `WinDesktop::keepDialogsWithOwner` moves each dialog
+  desktop left it and its dialogs out of sight. `showAndFocus` moves the window to the current
+  desktop (`WinDesktop::moveToCurrentDesktop` reads it from another app's window, or a probe
+  window on an empty desktop), and `WinDesktop::keepDialogsWithOwner` moves each dialog
   that opens on another desktop to its owner's (`IVirtualDesktopManager`).
 - Qt's macOS style (6.8 to 6.10) draws no usable check boxes in item views on macOS 27, at most
   a misplaced one on the first row. `ItemCheckStyle::apply` gives a view a style that paints them

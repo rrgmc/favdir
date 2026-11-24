@@ -283,7 +283,7 @@ void MainWindow::createTray()
     menu->addSeparator();
     menu->addAction(tr("Quit"), qApp, &QApplication::quit);
     m_tray = new TrayIcon(Icons::trayIcon(), QStringLiteral("favdir"), menu, this);
-    connect(m_tray, &TrayIcon::triggered, this, &MainWindow::toggleVisible);
+    connect(m_tray, &TrayIcon::triggered, this, &MainWindow::toggleFromTray);
     // Started hidden at sign-in: favdir lives only in the tray. Checked once main() has had the
     // chance to show the window.
     QTimer::singleShot(0, this, [this] {
@@ -350,19 +350,14 @@ void MainWindow::showAndFocus()
 {
     if (m_tray)
         m_tray->setDockIconVisible(true);
-#ifdef Q_OS_WIN
-    // The window the user is in, on the virtual desktop they are looking at.
-    const HWND previous = GetForegroundWindow();
-#endif
     if (isMinimized())
         showNormal();
     else
         show();
 #ifdef Q_OS_WIN
-    // A window hidden to the tray stays on the desktop it was hidden from; bring it, and so the
-    // dialogs it owns, to this one.
-    if (previous && previous != reinterpret_cast<HWND>(winId()))
-        WinDesktop::moveToDesktopOf(this, reinterpret_cast<WId>(previous));
+    // The window stays on the desktop it was hidden from, or left on; bring it, and so the
+    // dialogs it owns, to the one the user is looking at.
+    WinDesktop::moveToCurrentDesktop(this);
 #endif
     raise();
     activateWindow();
@@ -379,6 +374,21 @@ void MainWindow::toggleVisible()
     const bool inFront = isActiveWindow();
 #endif
     if (isVisible() && !isMinimized() && inFront)
+        hideWindow();
+    else
+        showAndFocus();
+}
+
+void MainWindow::toggleFromTray()
+{
+    // Clicking the tray icon makes the taskbar the foreground window, so a window that shows
+    // is hidden even when it is not in front.
+#ifdef Q_OS_WIN
+    const bool shown = isVisible() && !isMinimized() && WinDesktop::isOnCurrentDesktop(this);
+#else
+    const bool shown = isVisible() && !isMinimized();
+#endif
+    if (shown)
         hideWindow();
     else
         showAndFocus();

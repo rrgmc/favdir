@@ -7,9 +7,14 @@
 // sight on the old one.
 namespace WinDesktop {
 
-// Moves `window` to the virtual desktop that `reference` is on. Does nothing when `reference`
-// is on no particular desktop (the shell, the taskbar) or both are already on the same one.
-void moveToDesktopOf(QWidget *window, WId reference);
+// Whether `window` is on the virtual desktop the user is looking at.
+bool isOnCurrentDesktop(QWidget *window);
+
+// Moves `window` to the virtual desktop the user is looking at. Windows shows every virtual
+// desktop on all monitors at once, so there is one current desktop. It is read from another
+// application's window on it: the foreground window, else the topmost visible one, else a
+// window made for the purpose.
+void moveToCurrentDesktop(QWidget *window);
 
 // Keeps every dialog on the virtual desktop of the window that owns it: a dialog that opens
 // on another desktop is moved to its owner's and activated. Call once, after the QApplication
