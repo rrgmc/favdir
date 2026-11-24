@@ -30,7 +30,12 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
+#ifdef Q_OS_MACOS
+#include "MacApp.h"
+#endif
 #ifdef Q_OS_WIN
+#include "WinDesktop.h"
+
 #include <windows.h>
 // windows.h maps this to DocumentPropertiesW, which clashes with QIcon::ThemeIcon.
 #undef DocumentProperties
@@ -281,7 +286,7 @@ void MainWindow::createTray()
     menu->addSeparator();
     menu->addAction(tr("Quit"), qApp, &QApplication::quit);
     m_tray = new TrayIcon(Icons::trayIcon(), QStringLiteral("favdir"), menu, this);
-    connect(m_tray, &TrayIcon::triggered, this, &MainWindow::toggleVisible);
+    connect(m_tray, &TrayIcon::triggered, this, &MainWindow::toggleFromTray);
     // Started hidden at sign-in: favdir lives only in the tray. Checked once main() has had the
     // chance to show the window.
     QTimer::singleShot(0, this, [this] {
@@ -352,6 +357,15 @@ void MainWindow::showAndFocus()
         showNormal();
     else
         show();
+#ifdef Q_OS_WIN
+    // The window stays on the desktop it was hidden from, or left on; bring it, and so the
+    // dialogs it owns, to the one the user is looking at.
+    WinDesktop::moveToCurrentDesktop(this);
+#elif defined(Q_OS_MACOS)
+    // The same for Spaces, from the next activation on: AppKit moves a window that is already
+    // on screen, and a hidden one shows on the active Space anyway.
+    MacApp::moveToActiveSpace(this);
+#endif
     raise();
     activateWindow();
     m_filter->setFocus(Qt::ShortcutFocusReason);
@@ -367,6 +381,21 @@ void MainWindow::toggleVisible()
     const bool inFront = isActiveWindow();
 #endif
     if (isVisible() && !isMinimized() && inFront)
+        hideWindow();
+    else
+        showAndFocus();
+}
+
+void MainWindow::toggleFromTray()
+{
+    // Clicking the tray icon makes the taskbar the foreground window, so a window that shows
+    // is hidden even when it is not in front.
+#ifdef Q_OS_WIN
+    const bool shown = isVisible() && !isMinimized() && WinDesktop::isOnCurrentDesktop(this);
+#else
+    const bool shown = isVisible() && !isMinimized();
+#endif
+    if (shown)
         hideWindow();
     else
         showAndFocus();

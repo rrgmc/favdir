@@ -21,6 +21,8 @@ public:
 
     void showAndFocus();
     void toggleVisible();
+    // A left click on the tray icon: hides the window while it shows on this desktop.
+    void toggleFromTray();
     void setHotkeyError(const QString &error);
     void showMessage(const QString &text, bool error = false);
 
