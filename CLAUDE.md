@@ -125,6 +125,9 @@ actions on them. `README.md` describes the features and the build for users.
   the notarised macOS disk image, and the shared `release-publish` publishes the release with
   both (or replaces the files of one that exists). Nothing is published unless both builds
   succeed. The tag is the version; nothing in the tree is bumped for a release.
+- Every pull request that changes what people who use favdir notice adds a fragment in
+  `changelog.d/` (see its `README.md`); others get the `no-changelog` label. A release merges
+  the fragments into `CHANGELOG.md`, whose section for the version becomes the release notes.
 
 ## Public repository
 
