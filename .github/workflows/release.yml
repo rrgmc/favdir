@@ -64,8 +64,32 @@ jobs:
 
       - uses: astral-sh/setup-uv@v5
 
-      - name: Install Ninja and NSIS
-        run: choco install ninja nsis -y --no-progress
+      # NSIS comes from Chocolatey, whose feed is sometimes down (503/504) for minutes at a time.
+      # Keep the installed NSIS in the cache so a release does not depend on the feed, and retry
+      # the install when the cache is empty. The runner image already has Ninja.
+      - name: Cache NSIS
+        id: nsis-cache
+        uses: actions/cache@v4
+        with:
+          path: C:\Program Files (x86)\NSIS
+          key: nsis-${{ runner.os }}-1
+
+      - name: Install NSIS
+        if: steps.nsis-cache.outputs.cache-hit != 'true'
+        run: |
+          foreach ($attempt in 1..5) {
+            choco install nsis -y --no-progress
+            if ($LASTEXITCODE -eq 0) { exit 0 }
+            Write-Host "choco install failed (attempt $attempt), retrying in 60 s"
+            Start-Sleep -Seconds 60
+          }
+          exit 1
+
+      - name: Put NSIS on the PATH
+        run: |
+          "C:\Program Files (x86)\NSIS" | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+          & "C:\Program Files (x86)\NSIS\makensis.exe" /VERSION
+          if ($LASTEXITCODE -ne 0) { exit 1 }
 
       - name: MSVC environment
         uses: ilammy/msvc-dev-cmd@v1
