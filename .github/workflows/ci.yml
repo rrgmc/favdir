@@ -1,4 +1,4 @@
-# Managed by personal-rules (v0.2.1); /personal-rules:check compares it with the template.
+# Managed by personal-rules (v0.3.0); /personal-rules:check compares it with the template.
 name: CI
 
 # Pull request runs are titled "PR #<number>: <title>"; an empty run-name keeps GitHub's default.
@@ -28,7 +28,7 @@ jobs:
   # docs, version or code: documentation and the paths below skip the build. The version is the
   # tag's (-DFAVDIR_VERSION), so there is no version file.
   changes:
-    uses: RangelReale/personal-ai-rules/.github/workflows/changes.yml@v0.2.1
+    uses: RangelReale/personal-ai-rules/.github/workflows/changes.yml@v0.3.0
     with:
       # make_icons and make_screenshot are EXCLUDE_FROM_ALL; release-macos.sh runs only in the
       # release; CI does not use the Taskfile.
@@ -41,7 +41,7 @@ jobs:
   build:
     needs: changes
     if: needs.changes.outputs.main == 'true'
-    uses: RangelReale/personal-ai-rules/.github/workflows/cpp-ci.yml@v0.2.1
+    uses: RangelReale/personal-ai-rules/.github/workflows/cpp-ci.yml@v0.3.0
     with:
       full: ${{ needs.changes.outputs.full }}  # all platforms only when it matters
       matrix: >-
@@ -55,7 +55,7 @@ jobs:
   changelog:
     needs: changes
     if: github.event_name == 'pull_request'
-    uses: RangelReale/personal-ai-rules/.github/workflows/changelog-check.yml@v0.2.1
+    uses: RangelReale/personal-ai-rules/.github/workflows/changelog-check.yml@v0.3.0
     with:
       kind: ${{ needs.changes.outputs.kind }}
 

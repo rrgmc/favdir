@@ -32,7 +32,7 @@ jobs:
   # The tag is vX.Y.Z (or vX.Y.Z-rc.N, a prerelease) and on master. The version is the tag's:
   # nothing in the tree holds it, and the builds pass it as -DFAVDIR_VERSION.
   check:
-    uses: RangelReale/personal-ai-rules/.github/workflows/release-check.yml@v0.2.1
+    uses: RangelReale/personal-ai-rules/.github/workflows/release-check.yml@v0.3.0
     with:
       tag: ${{ inputs.tag || github.ref_name }}
 
@@ -190,7 +190,7 @@ jobs:
     needs: [check, windows-setup, macos-dmg]
     permissions:
       contents: write
-    uses: RangelReale/personal-ai-rules/.github/workflows/release-publish.yml@v0.2.1
+    uses: RangelReale/personal-ai-rules/.github/workflows/release-publish.yml@v0.3.0
     with:
       tag: ${{ needs.check.outputs.tag }}
       version: ${{ needs.check.outputs.version }}
