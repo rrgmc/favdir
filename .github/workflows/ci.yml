@@ -1,0 +1,77 @@
+# Managed by personal-rules (v0.2.1); /personal-rules:check compares it with the template.
+name: CI
+
+# Pull request runs are titled "PR #<number>: <title>"; an empty run-name keeps GitHub's default.
+run-name: >-
+  ${{ github.event_name == 'pull_request'
+  && format('PR #{0}: {1}', github.event.pull_request.number, github.event.pull_request.title)
+  || '' }}
+
+on:
+  # Work branches are checked by their pull request; a push to one does not start a second run.
+  push:
+    branches: [master]
+  # labeled/unlabeled: adding the no-changelog label re-runs the changelog check.
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A new push to a pull request cancels its older run; runs on master all finish.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # docs, version or code: documentation and the paths below skip the build. The version is the
+  # tag's (-DFAVDIR_VERSION), so there is no version file.
+  changes:
+    uses: RangelReale/personal-ai-rules/.github/workflows/changes.yml@v0.2.1
+    with:
+      # make_icons and make_screenshot are EXCLUDE_FROM_ALL; release-macos.sh runs only in the
+      # release; CI does not use the Taskfile.
+      ignore: tools/ scripts/release-macos.sh Taskfile.yml
+      # The setup scripts pin the Qt version: a change there builds every platform.
+      full-paths: scripts/setup.ps1 scripts/setup.sh
+
+  # Pull requests build Windows only (there is no linux preset); master and full changes build
+  # Windows and macOS.
+  build:
+    needs: changes
+    if: needs.changes.outputs.main == 'true'
+    uses: RangelReale/personal-ai-rules/.github/workflows/cpp-ci.yml@v0.2.1
+    with:
+      full: ${{ needs.changes.outputs.full }}  # all platforms only when it matters
+      matrix: >-
+        [
+          {"os": "windows-latest", "preset": "windows-ninja", "setup": "pwsh -File scripts/setup.ps1"},
+          {"os": "macos-latest", "preset": "macos", "setup": "sh scripts/setup.sh"}
+        ]
+      quick-matrix: '[{"os": "windows-latest", "preset": "windows-ninja", "setup": "pwsh -File scripts/setup.ps1"}]'
+
+  # Fragments in changelog.d/; passes when the repository keeps none.
+  changelog:
+    needs: changes
+    if: github.event_name == 'pull_request'
+    uses: RangelReale/personal-ai-rules/.github/workflows/changelog-check.yml@v0.2.1
+    with:
+      kind: ${{ needs.changes.outputs.kind }}
+
+  # The only check branch protection requires. Skipped jobs pass, so jobs can be added without
+  # touching the protection: list every other job in needs.
+  ci-result:
+    name: CI result
+    needs: [changes, build, changelog]
+    if: always()
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    steps:
+      - env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          for result in $RESULTS; do
+            case "$result" in success | skipped) ;; *) exit 1 ;; esac
+          done

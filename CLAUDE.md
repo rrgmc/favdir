@@ -111,14 +111,20 @@ actions on them. `README.md` describes the features and the build for users.
   workflow runs it with a temporary keychain and an App Store Connect API key, from the secrets
   of the `release` environment. That job holds secrets: keep its actions pinned to commits.
 - `master` is protected: changes go through a pull request whose branch is up to date with
-  `master`, and the `ci` check must pass. Admins are held to it too.
-- `.github/workflows/build.yml` builds and tests on every push and pull request, unless the
-  change touches only documentation (`*.md`, `docs/`, `LICENSE`). Its `ci` job, the only
-  required check, passes when the build passed or was skipped. Keep it that way, so the build
-  matrix can change without changing the branch protection. `release.yml` runs when a
-  tag `vX.Y.Z` is pushed: it publishes the GitHub release (unless it exists), builds with that
-  version (`-DFAVDIR_VERSION`) and attaches the Windows setup and the macOS disk image. The tag
-  is the version; nothing in the tree is bumped for a release.
+  `master`, and the `CI result` check must pass. Admins are held to it too.
+- `.github/workflows/ci.yml` calls the shared workflows of `RangelReale/personal-ai-rules`,
+  pinned to a tag (`@v0.2.1`). It runs on pull requests and on pushes to `master`, and skips the
+  build when a change touches only documentation or the paths in its `ignore` list (`tools/`,
+  `scripts/release-macos.sh`, `Taskfile.yml`). Pull requests build Windows only; `master`, and a
+  change to `scripts/setup.*` (the Qt pin), build Windows and macOS. Its `CI result` job, the only
+  required check, passes when the build passed or was skipped: keep it that way, so the jobs can
+  change without changing the branch protection. When a folder or a job is added, update the
+  path rules in the same change.
+- `release.yml` runs when a tag `vX.Y.Z` is pushed: the shared `release-check` checks the tag,
+  the two jobs here build with that version (`-DFAVDIR_VERSION`) and make the Windows setup and
+  the notarised macOS disk image, and the shared `release-publish` publishes the release with
+  both (or replaces the files of one that exists). Nothing is published unless both builds
+  succeed. The tag is the version; nothing in the tree is bumped for a release.
 
 ## Public repository
 
