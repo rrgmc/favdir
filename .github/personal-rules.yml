@@ -1,6 +1,6 @@
 # personal-rules: what this repository opted into. /personal-rules:check audits against it, and
 # the always-on rules read `stage` to decide how work reaches master.
-version: 0.1.0               # personal-rules version last applied
+version: 0.2.1               # personal-rules version last applied
 stage: established           # early: merge locally, no CI | established: PR-only master, CI result required
 language: cpp                # the main language, which holds the version: android | rust | go | cpp | none
 features: [ci, release, license]  # any of: ci, release, changelog, dependabot, license
