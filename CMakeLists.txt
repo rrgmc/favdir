@@ -23,6 +23,18 @@ endif()
 find_package(Qt6 6.10 REQUIRED COMPONENTS Widgets Network Test)
 qt_standard_project_setup()
 
+# Shared code from personal-ai-shared: only the update-check module (shared::update_check), which
+# reads the update.json each release attaches. To try a local checkout of it, configure with
+# -DFETCHCONTENT_SOURCE_DIR_PERSONAL_AI_SHARED=<its folder>.
+include(FetchContent)
+set(PAS_BUILD_UPDATE_CHECK ON)
+FetchContent_Declare(personal_ai_shared
+    GIT_REPOSITORY https://github.com/RangelReale/personal-ai-shared.git
+    GIT_TAG v0.1.0
+    GIT_SHALLOW TRUE
+    SOURCE_SUBDIR cpp)
+FetchContent_MakeAvailable(personal_ai_shared)
+
 # Model and actions, shared by the app and the tests.
 qt_add_library(favdir_core STATIC
     src/model/Action.h src/model/Action.cpp
@@ -53,8 +65,9 @@ qt_add_library(favdir_ui STATIC
     src/ui/SectionView.h src/ui/SectionView.cpp
     src/ui/SettingsDialog.h src/ui/SettingsDialog.cpp
     src/ui/TrayIcon.h
+    src/ui/UpdateNotifier.h src/ui/UpdateNotifier.cpp
 )
-target_link_libraries(favdir_ui PUBLIC favdir_core Qt6::Widgets)
+target_link_libraries(favdir_ui PUBLIC favdir_core Qt6::Widgets shared::update_check)
 if(APPLE)
     enable_language(OBJCXX)
     target_sources(favdir_ui PRIVATE
@@ -121,7 +134,7 @@ endif()
 
 enable_testing()
 
-foreach(test_name tst_folderstore tst_actionrunner tst_mainwindow)
+foreach(test_name tst_folderstore tst_actionrunner tst_mainwindow tst_updatenotifier)
     qt_add_executable(${test_name} tests/${test_name}.cpp)
     target_link_libraries(${test_name} PRIVATE favdir_ui Qt6::Test)
     # TAP: the plain-text logger prints nothing when stdout is a pipe on Windows.

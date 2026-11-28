@@ -26,6 +26,10 @@ public:
     void setHotkeyError(const QString &error);
     void showMessage(const QString &text, bool error = false);
 
+signals:
+    // Help > Check for updates; main.cpp connects it to the UpdateNotifier.
+    void checkForUpdatesRequested();
+
 protected:
     void closeEvent(QCloseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;

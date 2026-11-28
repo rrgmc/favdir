@@ -191,6 +191,10 @@ void MainWindow::createActions()
     settings->setMenuRole(QAction::PreferencesRole);
 
     QMenu *help = menuBar()->addMenu(tr("&Help"));
+    QAction *checkUpdates = help->addAction(tr("Check for &updates…"), this,
+                                            &MainWindow::checkForUpdatesRequested);
+    // macOS puts it in the application menu, under About.
+    checkUpdates->setMenuRole(QAction::ApplicationSpecificRole);
     QAction *about = help->addAction(tr("&About favdir"), this, &MainWindow::showAbout);
     about->setMenuRole(QAction::AboutRole);
     QAction *aboutQt = help->addAction(tr("About &Qt"), qApp, &QApplication::aboutQt);

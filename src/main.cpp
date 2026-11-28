@@ -7,6 +7,7 @@
 #include "ui/MacApp.h"
 #endif
 #include "ui/MainWindow.h"
+#include "ui/UpdateNotifier.h"
 #ifdef Q_OS_WIN
 #include "ui/WinDesktop.h"
 #endif
@@ -63,6 +64,12 @@ int main(int argc, char *argv[])
 
     MainWindow window(&store);
     QObject::connect(&instance, &SingleInstance::showRequested, &window, &MainWindow::showAndFocus);
+
+    // New releases: at most once a day while the setting is on, and from Help > Check for updates.
+    UpdateNotifier updates(&store, &window);
+    QObject::connect(&window, &MainWindow::checkForUpdatesRequested, &updates,
+                     &UpdateNotifier::checkNow);
+    updates.start();
 
     GlobalHotkey hotkey;
     QObject::connect(&hotkey, &GlobalHotkey::activated, &window, &MainWindow::toggleVisible);
