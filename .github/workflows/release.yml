@@ -32,7 +32,7 @@ jobs:
   # The tag is vX.Y.Z (or vX.Y.Z-rc.N, a prerelease) and on master. The version is the tag's:
   # nothing in the tree holds it, and the builds pass it as -DFAVDIR_VERSION.
   check:
-    uses: RangelReale/personal-ai-rules/.github/workflows/release-check.yml@v0.3.0
+    uses: RangelReale/personal-ai-rules/.github/workflows/release-check.yml@v0.6.0
     with:
       tag: ${{ inputs.tag || github.ref_name }}
 
@@ -184,14 +184,21 @@ jobs:
           security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
           rm -f "$RUNNER_TEMP/notary.p8"
 
-  # Publishes the release (generated notes, as favdir keeps no CHANGELOG.md) with both files and a
-  # SHA256SUMS.txt, or replaces the files of a release that exists.
+  # Publishes the release (notes from the version's CHANGELOG.md section, else generated) with
+  # both files, a SHA256SUMS.txt and update.json, or replaces the files of a release that exists.
+  # update.json tells installed copies of favdir about the new version (Help > Check for updates);
+  # its download keys are set explicitly, so renaming a file fails the release instead of
+  # silently dropping a platform.
   publish:
     needs: [check, windows-setup, macos-dmg]
     permissions:
       contents: write
-    uses: RangelReale/personal-ai-rules/.github/workflows/release-publish.yml@v0.3.0
+    uses: RangelReale/personal-ai-rules/.github/workflows/release-publish.yml@v0.6.0
     with:
       tag: ${{ needs.check.outputs.tag }}
       version: ${{ needs.check.outputs.version }}
       prerelease: ${{ needs.check.outputs.prerelease }}
+      update-manifest: true
+      update-assets: |
+        windows-x86_64 favdir-*-win64.exe
+        macos favdir-*-macos.dmg
