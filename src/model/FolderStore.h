@@ -11,6 +11,7 @@ struct Settings
 {
     QString hotkey;           // QKeySequence portable text; empty disables the global hotkey
     bool closeToTray = true;  // closing the window hides it instead of quitting
+    bool checkForUpdates = true;  // look for a newer release once a day
 
     friend bool operator==(const Settings &, const Settings &) = default;
 };

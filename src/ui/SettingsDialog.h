@@ -26,4 +26,5 @@ private:
     QKeySequenceEdit *m_hotkey;
     QCheckBox *m_closeToTray;
     QCheckBox *m_startAtSignIn;
+    QCheckBox *m_checkForUpdates;
 };

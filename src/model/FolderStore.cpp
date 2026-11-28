@@ -77,6 +77,7 @@ bool FolderStore::load(QString *error)
     if (settings.contains(QStringLiteral("hotkey")))
         m_settings.hotkey = settings.value(QStringLiteral("hotkey")).toString();
     m_settings.closeToTray = settings.value(QStringLiteral("closeToTray")).toBool(true);
+    m_settings.checkForUpdates = settings.value(QStringLiteral("checkForUpdates")).toBool(true);
 
     m_actions = actionsFromJson(root.value(QStringLiteral("actions")).toArray());
     for (const QJsonValue &v : root.value(QStringLiteral("folders")).toArray()) {
@@ -100,6 +101,7 @@ bool FolderStore::save(QString *error)
          QJsonObject{
              {QStringLiteral("hotkey"), m_settings.hotkey},
              {QStringLiteral("closeToTray"), m_settings.closeToTray},
+             {QStringLiteral("checkForUpdates"), m_settings.checkForUpdates},
          }},
         {QStringLiteral("actions"), actionsToJson(m_actions)},
         {QStringLiteral("folders"), folders},

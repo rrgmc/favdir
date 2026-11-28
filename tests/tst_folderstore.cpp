@@ -73,7 +73,7 @@ private slots:
             custom.disabledActions.append(disabledId);
             store.addFolder(makeFolder(QStringLiteral("a")));
             store.addFolder(custom);
-            store.setSettings(Settings{QStringLiteral("Ctrl+Shift+K"), false});
+            store.setSettings(Settings{QStringLiteral("Ctrl+Shift+K"), false, false});
             QVERIFY(store.save());
         }
 
@@ -91,6 +91,20 @@ private slots:
         QVERIFY(b.customActions.first().shell);
         QCOMPARE(loaded.settings().hotkey, QStringLiteral("Ctrl+Shift+K"));
         QCOMPARE(loaded.settings().closeToTray, false);
+        QCOMPARE(loaded.settings().checkForUpdates, false);
+    }
+
+    // Files written before the update check existed turn it on.
+    void checkForUpdatesDefaultsOn()
+    {
+        QFile file(m_path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write(R"({"version": 1, "settings": {"hotkey": "", "closeToTray": true}})");
+        file.close();
+        FolderStore loaded(m_path);
+        loaded.setAutoSave(false);
+        QVERIFY(loaded.load());
+        QVERIFY(loaded.settings().checkForUpdates);
     }
 
     void emptyHotkeyStaysEmpty()
