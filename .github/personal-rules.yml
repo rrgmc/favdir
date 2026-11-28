@@ -1,9 +1,12 @@
 # personal-rules: what this repository opted into. /personal-rules:check audits against it, and
 # the always-on rules read `stage` to decide how work reaches master.
-version: 0.3.0               # personal-rules version last applied
+version: 0.6.0               # personal-rules version last applied
 stage: established           # early: merge locally, no CI | established: PR-only master, CI result required
 language: cpp                # the main language, which holds the version: android | rust | go | cpp | none
-features: [ci, release, changelog, license]  # any of: ci, release, changelog, dependabot, license
+features: [ci, release, changelog, license, update-check]  # any of: ci, release, changelog, dependabot, license, update-check
 release-environment: release # GitHub environment holding the signing secrets; '' = repository secrets
+# Features whose workflow the repository writes itself: release.yml builds the NSIS setup and the
+# notarised disk image, which the template cannot.
+custom: [release]
 # Other parts of the repository, each in its own folder, built on the main code:
 components: []
