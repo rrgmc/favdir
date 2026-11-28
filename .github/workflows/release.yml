@@ -57,13 +57,21 @@ jobs:
           path: C:\Program Files (x86)\NSIS
           key: nsis-${{ runner.os }}-1
 
+      # Done only when makensis.exe exists: choco exits 0 after "installed 0/0 packages" when its
+      # feed answers 503/504. winget, where the image has it, is the second source.
       - name: Install NSIS
         if: steps.nsis-cache.outputs.cache-hit != 'true'
         run: |
+          $makensis = 'C:\Program Files (x86)\NSIS\makensis.exe'
           foreach ($attempt in 1..5) {
             choco install nsis -y --no-progress
-            if ($LASTEXITCODE -eq 0) { exit 0 }
-            Write-Host "choco install failed (attempt $attempt), retrying in 60 s"
+            if (Test-Path $makensis) { exit 0 }
+            if (Get-Command winget -ErrorAction SilentlyContinue) {
+              winget install --id NSIS.NSIS --exact --silent --disable-interactivity `
+                --accept-source-agreements --accept-package-agreements
+              if (Test-Path $makensis) { exit 0 }
+            }
+            Write-Host "NSIS install failed (attempt $attempt), retrying in 60 s"
             Start-Sleep -Seconds 60
           }
           exit 1
