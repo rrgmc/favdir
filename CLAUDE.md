@@ -39,13 +39,19 @@ actions on them. `README.md` describes the features and the build for users.
   detached processes) and `DefaultActions` (first-run actions and default hotkey, per
   platform).
 - `src/ui`: widgets. `MainWindow` holds two `PriorityBoard`s (Active, Inactive), each with three
-  `SectionView`s painted by `FolderDelegate`.
+  `SectionView`s painted by `FolderDelegate`. `UpdateNotifier` runs the update check (created in
+  `main.cpp`, so the GUI tests never touch the network).
+- The update check comes from personal-ai-shared's `shared::update_check` (`FetchContent` at a
+  tag in `CMakeLists.txt`; configure needs network once). It reads the `update.json` that
+  `release.yml` attaches; its contract is `spec/update-check/` in that repository. To try a local
+  checkout, configure with `-DFETCHCONTENT_SOURCE_DIR_PERSONAL_AI_SHARED=<folder>`.
 - `src/platform`: `GlobalHotkey` (`RegisterHotKey` on Windows, Carbon on macOS, one
   `GlobalHotkey_<platform>.cpp` per platform) and `SingleInstance`.
 - Libraries: `favdir_core` (model and actions) and `favdir_ui` (widgets), so tests can link them.
   `main.cpp` and `src/platform` belong only to the `favdir` executable.
-- `tests`: `tst_folderstore`, `tst_actionrunner`, and `tst_mainwindow`, which drives the window
-  with key presses on the offscreen platform.
+- `tests`: `tst_folderstore`, `tst_actionrunner`, `tst_mainwindow`, which drives the window
+  with key presses on the offscreen platform, and `tst_updatenotifier`, which runs the update
+  check against a manifest file with QSettings in a temporary INI file.
 
 ## Things to keep in mind
 

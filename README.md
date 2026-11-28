@@ -20,6 +20,9 @@ tool you need with one click or one key. It runs on Windows and macOS.
   any application.
 - Settings can **start favdir when you sign in** (on macOS 13 and later). It then starts
   hidden in the tray or menu bar.
+- favdir **tells you when a new version is out**: it looks once a day (turn it off in
+  Settings), and **Help > Check for updates** looks now. It only shows a notice with a download
+  link; it never downloads or installs anything by itself.
 
 ## Keyboard
 
@@ -152,6 +155,11 @@ Folders, actions and settings are saved as JSON:
 
 The environment variable `FAVDIR_DATA_FILE` points favdir at another file, which is useful for
 testing.
+
+The update check keeps the time of the last check and a skipped version with the window
+position (the registry on Windows, `~/Library/Preferences` on macOS). It fetches
+`https://github.com/rrgmc/favdir/releases/latest/download/update.json`, which each release
+attaches; `FAVDIR_UPDATE_URL` points it at another URL or a local file, for testing.
 
 ## Building
 
