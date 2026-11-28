@@ -109,6 +109,7 @@ void UpdateNotifier::showUpdate(uc::Update update)
 
     // Not modal: the user may keep working and answer later.
     auto *box = new QMessageBox(m_window);
+    box->setObjectName(QStringLiteral("updateNotice"));  // macOS shows no title to find it by
     box->setAttribute(Qt::WA_DeleteOnClose);
     box->setWindowModality(Qt::NonModal);
     box->setIcon(QMessageBox::Information);

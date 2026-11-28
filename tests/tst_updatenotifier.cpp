@@ -31,14 +31,15 @@ QByteArray manifest(const QString &version)
         .toJson();
 }
 
-// The visible message box whose title is `title`, waiting for it to appear.
-QMessageBox *waitForBox(const QString &title)
+// The visible update notice, waiting for it to appear. Found by object name: macOS message
+// boxes have no title.
+QMessageBox *waitForNotice()
 {
     QMessageBox *found = nullptr;
     const bool ok = QTest::qWaitFor([&] {
         for (QWidget *w : QApplication::topLevelWidgets()) {
             auto *box = qobject_cast<QMessageBox *>(w);
-            if (box && box->isVisible() && box->windowTitle() == title) {
+            if (box && box->isVisible() && box->objectName() == u"updateNotice") {
                 found = box;
                 return true;
             }
@@ -48,14 +49,14 @@ QMessageBox *waitForBox(const QString &title)
     return ok ? found : nullptr;
 }
 
-// Accepts the next modal box titled `title` and returns its text through `text`. Polls from a
+// Accepts the next modal message box and returns its text through `text`. Polls from a
 // timer: QMessageBox::information runs its own event loop, which a nested wait would block.
-void answerModalBox(QObject *context, const QString &title, QString *text)
+void answerModalBox(QObject *context, QString *text)
 {
     auto *timer = new QTimer(context);
-    QObject::connect(timer, &QTimer::timeout, context, [timer, title, text] {
+    QObject::connect(timer, &QTimer::timeout, context, [timer, text] {
         auto *box = qobject_cast<QMessageBox *>(QApplication::activeModalWidget());
-        if (box && box->windowTitle() == title) {
+        if (box) {
             *text = box->text();
             timer->deleteLater();
             box->accept();
@@ -122,7 +123,7 @@ private slots:
         m_window->show();
         UpdateNotifier notifier(m_store.get(), m_window.get());
         notifier.checkNow();
-        QMessageBox *box = waitForBox(QStringLiteral("Update available"));
+        QMessageBox *box = waitForNotice();
         QVERIFY(box);
         QVERIFY2(box->text().contains(QStringLiteral("1.2.0")), qPrintable(box->text()));
         QVERIFY(box->text().contains(QStringLiteral("1.0.0")));
@@ -149,7 +150,7 @@ private slots:
             QVERIFY(!(qobject_cast<QMessageBox *>(w) && w->isVisible()));
 
         m_window->show();
-        QVERIFY(waitForBox(QStringLiteral("Update available")));
+        QVERIFY(waitForNotice());
     }
 
     void upToDateAnswersAManualCheck()
@@ -158,7 +159,7 @@ private slots:
         m_window->show();
         UpdateNotifier notifier(m_store.get(), m_window.get());
         QString text;
-        answerModalBox(this, QStringLiteral("Check for updates"), &text);
+        answerModalBox(this, &text);
         notifier.checkNow();
         QVERIFY(QTest::qWaitFor([&] { return !text.isEmpty(); }, 5000));
         QVERIFY2(text.contains(QStringLiteral("latest version")), qPrintable(text));
@@ -170,7 +171,7 @@ private slots:
         m_window->show();
         UpdateNotifier notifier(m_store.get(), m_window.get());
         QString text;
-        answerModalBox(this, QStringLiteral("Check for updates"), &text);
+        answerModalBox(this, &text);
         notifier.checkNow();
         QVERIFY(QTest::qWaitFor([&] { return !text.isEmpty(); }, 5000));
         QVERIFY2(text.contains(QStringLiteral("could not check")), qPrintable(text));
